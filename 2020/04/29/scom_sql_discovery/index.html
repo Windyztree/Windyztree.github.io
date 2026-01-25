@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>SCOM - SQL DB Engine Discovery Mechanism on Cluster | Wendi Cai&#39;s Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="In summary For any SQL DB Engine on cluster to be discovered, firstly ensure the SQL Server Network Name is already discovered in “Agentless Managed”.  If not, check if there is any orphaned resource">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SCOM - SQL DB Engine Discovery Mechanism on Cluster">
+<meta property="og:url" content="http://windyztree.github.io/2020/04/29/scom_sql_discovery/index.html">
+<meta property="og:site_name" content="Wendi Cai&#39;s Blog">
+<meta property="og:description" content="In summary For any SQL DB Engine on cluster to be discovered, firstly ensure the SQL Server Network Name is already discovered in “Agentless Managed”.  If not, check if there is any orphaned resource">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://windyztree.github.io/images/scom7.jpg">
+<meta property="og:image" content="http://windyztree.github.io/images/scom8.jpg">
+<meta property="og:image" content="http://windyztree.github.io/images/scom9.jpg">
+<meta property="og:image" content="http://windyztree.github.io/images/scom10.jpg">
+<meta property="article:published_time" content="2020-04-28T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-25T05:40:57.235Z">
+<meta property="article:author" content="Wendi Cai">
+<meta property="article:tag" content="Cluster">
+<meta property="article:tag" content="SCOM">
+<meta property="article:tag" content="SQL Discovery">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://windyztree.github.io/images/scom7.jpg">
+  
+    <link rel="alternate" href="/atom.xml" title="Wendi Cai's Blog" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.2.0/css/fork-awesome.min.css">
+
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Wendi Cai&#39;s Blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Search"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://windyztree.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-scom_sql_discovery" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/04/29/scom_sql_discovery/" class="article-date">
+  <time class="dt-published" datetime="2020-04-28T16:00:00.000Z" itemprop="datePublished">2020-04-29</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/System-Center-Operations-Manager/">System Center Operations Manager</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      SCOM - SQL DB Engine Discovery Mechanism on Cluster
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h3 id="In-summary"><a href="#In-summary" class="headerlink" title="In summary"></a>In summary</h3><ul>
+<li><p>For any SQL DB Engine on cluster to be discovered, firstly ensure the <strong>SQL Server Network Name</strong> is already discovered in “Agentless Managed”.</p>
+</li>
+<li><p>If not, check if there is any <strong>orphaned resource</strong> in Windows Cluster.</p>
+</li>
+</ul>
+<h3 id="Details"><a href="#Details" class="headerlink" title="Details"></a>Details</h3><p>For SQL DB Engine on Cluster, the discovery is expected to run on 3 objects.</p>
+<ul>
+<li>SQL Server Network Name (You can find the name in <strong>Failover Cluster Manager</strong> -&gt; <em>Cluster Name</em> -&gt; <strong>Roles</strong> -&gt; <strong>Server Name</strong>)</li>
+<li>Cluster Name (The cluster name in <strong>Failover Cluster Manager</strong>)</li>
+<li>Server Name of the Node</li>
+</ul>
+<p><img src="/../images/scom7.jpg"></p>
+<p>Only the execution on <strong>SQL Server Network Name</strong> returns instances on it. Execution on the other 2 objects will show successful, but won’t return any discovered instance. That’s expected.</p>
+<p><strong>In SCOM ETL Trace:</strong></p>
+<p>Execution on 2012CL (SQL Server Network Name):</p>
+<blockquote>
+<p>[1]24232.8364::12&#x2F;26&#x2F;2019-18:52:44.977 [ExecutionManager] [] [Information] :CTaskTracker::TaskCompleted{tasktracker_cpp1514}Notifying creator of task completion for task 6446, completion reason 0x0, task result is SUCCESS, task output is <DataItem type="System.DiscoveryData" time="2019-12-27T02:52:45.3080007Z" sourceHealthServiceId="d372b2e3-41af-7466-fcfa-e5e97c716492"><DiscoveryType>0</DiscoveryType><DiscoverySourceType>0</DiscoverySourceType><DiscoverySourceObjectId>{bb187d3c-1218-6f43-b6f6-0a0695b96bd7}</DiscoverySourceObjectId><font color=#ff7f50><strong><DiscoverySourceManagedEntity>{e12d4b62-8f91-0b5e-e583-47789cae70dc}</DiscoverySourceManagedEntity></strong></font><br><font color=#009900><strong><ClassInstances></strong></font><br><ClassInstance TypeId="{737b3f9e-b13b-f42a-a7b8-47c625b3cbf0}"><Settings><Setting><Name>MachineName</Name><Value>2012CL.sqlrepro.edu</Value></Setting><Setting><Name>InstanceName</Name><Value>SQL2012AG</Value></Setting><Setting><Name>DisplayName</Name><Value>Resource Pool Group</Value></Setting></Settings></ClassInstance><br><ClassInstance TypeId="{258f9e75-fb47-c6fc-c45b-75df9ca3a53e}"><Settings><Setting><Name>PrincipalName</Name><Value>2012CL.sqlrepro.edu</Value></Setting><Setting><Name>MachineName</Name><Value>2012CL.sqlrepro.edu</Value></Setting><Setting><Name>InstanceName</Name><Value>SQL2012AG</Value></Setting></Settings></ClassInstance><br><ClassInstance TypeId="{01c7eaa4-aaa0-28a2-55ec-af08fb1b7f9d}"><Settings><Setting><Name>MachineName</Name><Value>2012CL.sqlrepro.edu</Value></Setting><Setting><Name>NetbiosComputerName</Name><Value>2012CL</Value></Setting><Setting><Name>NetbiosDomainName</Name><Value>SQLREPRO</Value></Setting><Setting><Name>InstanceName</Name><Value>SQL2012AG</Value></Setting><Setting><Name>DisplayName</Name><Value>2012CL\SQL2012AG</Value></Setting><Setting><Name>ConnectionString</Name><Value>2012CL.sqlrepro.edu\SQL2012AG</Value></Setting><Setting><Name>Edition</Name><Value>Enterprise Edition</Value></Setting><Setting><Name>InstanceID</Name><Value>MSSQL11.SQL2012AG</Value></Setting><Setting><Name>Language</Name><Value>1033</Value></Setting><Setting><Name>Version</Name><Value>11.0.2100.60</Value></Setting><Setting><Name>ServiceName</Name><Value>MSSQL$SQL2012AG</Value></Setting><Setting><Name>ServiceClusterName</Name><Value>SQL SERVER (SQL2012AG)</Value></Setting><Setting><Name>Cluster</Name><Value>True</Value></Setting><Setting><Name>PerformanceCounterObject</Name><Value>MSSQL$SQL2012AG</Value></Setting><Setting><Name>AuthenticationMode</Name><Value>Windows Authentication Mode</Value></Setting><Setting><Name>FullTextSearchServiceName</Name><Value>MSSQLFDLauncher$SQL2012AG</Value></Setting><Setting><Name>FullTextSearchServiceClusterName</Name><Value>SQL Full-text Filter Daemon Launcher (SQL2012AG)</Value></Setting><Setting><Name>AgentName</Name><Value>SQLAgent$SQL2012AG</Value></Setting><Setting><Name>Type</Name><Value>DB Engine</Value></Setting><Setting><Name>AgentClusterName</Name><Value>SQL SERVER AGENT (SQL2012AG)</Value></Setting><Setting><Name>MasterDatabaseLocation</Name><Value>T:\MSSQL11.SQL2012AG\MSSQL\DATA\master.mdf</Value></Setting><Setting><Name>MasterDatabaseLogLocation</Name><Value>T:\MSSQL11.SQL2012AG\MSSQL\DATA\mastlog.ldf</Value></Setting><Setting><Name>ErrorLogLocation</Name><Value>T:\MSSQL11.SQL2012AG\MSSQL\Log\ERRORLOG</Value></Setting><Setting><Name>ServicePackVersion</Name><Value>0</Value></Setting><Setting><Name>AuditLevel</Name><Value>Failure</Value></Setting><Setting><Name>InstallPath</Name><Value>C:\Program Files\Microsoft SQL Server\MSSQL11.SQL2012AG\MSSQL</Value></Setting><Setting><Name>ToolsPath</Name><Value>C:\Program Files\Microsoft SQL Server\110\Tools</Value></Setting><Setting><Name>EnableErrorReporting</Name><Value>False</Value></Setting><Setting><Name>Account</Name><Value>sqlrepro\sqlsvc</Value></Setting><Setting><Name>PrincipalName</Name><Value>2012CL.sqlrepro.edu</Value></Setting><Setting><Name>MonitoringType</Name><Value>Local</Value></Setting></Settings></ClassInstance><br><font color=#009900><strong></ClassInstances></strong></font><br><font color=#009900><strong><RelationshipInstances></strong></font><br><RelationshipInstance TypeId="{5446657d-ac22-0a78-dfb2-36150b58d67d}" SourceTypeId="{c247cbe5-34b2-abf4-8d68-884d4a47cf8b}" TargetTypeId="{01c7eaa4-aaa0-28a2-55ec-af08fb1b7f9d}"><Settings /><SourceRole><Settings /></SourceRole><TargetRole><Settings><Setting><Name>MachineName</Name><Value>2012CL.sqlrepro.edu</Value></Setting><Setting><Name>InstanceName</Name><Value>SQL2012AG</Value></Setting></Settings></TargetRole></RelationshipInstance><br><RelationshipInstance TypeId="{f8c488fb-9ff6-5148-29cb-5b3a9cafce01}" SourceTypeId="{f3a9b2cb-ccdb-3896-045c-fc8749039e7f}" TargetTypeId="{ea99500d-8d52-fc52-b5a5-10dcd1e9d2bd}"><Settings /><SourceRole><Settings /></SourceRole><TargetRole><Settings><Setting><Name>PrincipalName</Name><Value>2012CL.sqlrepro.edu</Value></Setting></Settings></TargetRole></RelationshipInstance><br><RelationshipInstance TypeId="{1e8df0aa-fc37-ace6-cf38-333c67ef4f50}" SourceTypeId="{e817d034-02e8-294c-3509-01ca25481689}" TargetTypeId="{01c7eaa4-aaa0-28a2-55ec-af08fb1b7f9d}"><Settings /><SourceRole><Settings><Setting><Name>PrincipalName</Name><Value>2012CL.sqlrepro.edu</Value></Setting></Settings></SourceRole><TargetRole><Settings><Setting><Name>MachineName</Name><Value>2012CL.sqlrepro.edu</Value></Setting><Setting><Name>InstanceName</Name><Value>SQL2012AG</Value></Setting></Settings></TargetRole></RelationshipInstance><br><font color=#009900><strong></RelationshipInstances></strong></font><br></DataItem>.</p>
+</blockquote>
+<p>Execution on Cluster2016 (Cluster Name):</p>
+<blockquote>
+<p>[3]24232.8364::12&#x2F;26&#x2F;2019-18:53:05.985 [ExecutionManager] [] [Information] :CTaskTracker::TaskCompleted{tasktracker_cpp1514}Notifying creator of task completion for task 6448, completion reason 0x0, task result is SUCCESS, task output is <DataItem type="System.DiscoveryData" time="2019-12-27T02:53:06.3158795Z" sourceHealthServiceId="d372b2e3-41af-7466-fcfa-e5e97c716492"><DiscoveryType>0</DiscoveryType><DiscoverySourceType>0</DiscoverySourceType><DiscoverySourceObjectId>{bb187d3c-1218-6f43-b6f6-0a0695b96bd7}</DiscoverySourceObjectId><font color=#ff7f50><strong><DiscoverySourceManagedEntity>{124369dd-8822-2f6b-9ce7-9a1b06551b24}</DiscoverySourceManagedEntity></strong></font><br><font color=#009900><strong><ClassInstances /></strong> # No SQL instance is returned here<br><strong><RelationshipInstances /></strong></font><br></DataItem>.</p>
+</blockquote>
+<p>Execution on Node4 (Server Name of the Node):</p>
+<blockquote>
+<p>[1]24232.10072::12&#x2F;26&#x2F;2019-18:51:54.710 [ExecutionManager] [] [Information] :CTaskTracker::TaskCompleted{tasktracker_cpp1514}Notifying creator of task completion for task 6441, completion reason 0x0, task result is SUCCESS, task output is <DataItem type="System.DiscoveryData" time="2019-12-27T02:51:55.0411614Z" sourceHealthServiceId="d372b2e3-41af-7466-fcfa-e5e97c716492"><DiscoveryType>0</DiscoveryType><DiscoverySourceType>0</DiscoverySourceType><DiscoverySourceObjectId>{bb187d3c-1218-6f43-b6f6-0a0695b96bd7}</DiscoverySourceObjectId><font color=#ff7f50><strong><DiscoverySourceManagedEntity>{264b2a65-07f0-8cce-8757-b309a2bc20b8}</DiscoverySourceManagedEntity></strong></font><br><font color=#009900><strong><ClassInstances /></strong> # No SQL instance is returned here<br><strong><RelationshipInstances /></strong></font><br></DataItem>.</p>
+</blockquote>
+<p>The 3 GUIDs in the trace are the BME IDs of the 3 objects:<br><img src="/../images/scom8.jpg"></p>
+<p>If you check SCOM trace and find the discovery didn’t run on SQL Server Network Name, the first thing is to check whether the discovery target is already discovered in <strong>SCOM Console</strong> -&gt; <strong>Monitoring</strong> -&gt; <strong>Discovered Inventory</strong> -&gt; <em><Target class of the discovery></em>. An object with the <strong>SQL Server Network Name</strong> is probably missing there.</p>
+<ul>
+<li>Tracing the discovery chain to the source, if the SQL Server Network Name is already discovered and shows up in Agentless Managed, we need to troubleshoot the SQL discovery itself.</li>
+<li>Otherwise, if the SQL Server Network Name doesn’t show up in Agentless Managed, the issue is actually a Windows Cluster discovery issue.</li>
+</ul>
+<p>For the Windows Cluster discovery issue, I followed below steps to resolve it.</p>
+<ol>
+<li><p><strong>[VERY IMPORTANT]</strong> Confirm agent proxy is enabled on the agents.</p>
+</li>
+<li><p>Check if the cluster has any orphaned resource blocking the cluster discovery.</p>
+<p> a. Run this PowerShell command to check if there is any offline resources that had been removed from cluster manager.</p>
+ <figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">get-clusterresource</span> | <span class="built_in">where</span> &#123;<span class="variable">$_</span>.state <span class="operator">-eq</span> <span class="string">&#x27;offline&#x27;</span>&#125;</span><br></pre></td></tr></table></figure>
+<p> b. Run this PowerShell command. Compare the result with the resources in Failover Cluster Manager to find out if there is any orphaned resource.</p>
+ <figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">get-clusterresource</span> | <span class="built_in">sort-object</span> <span class="literal">-Property</span> ResourceType</span><br></pre></td></tr></table></figure>
+<p> All the resources returned by the command should be found in below areas in Failover Cluster Manager. Otherwise, there is an orphaned resource.</p>
+<p> <img src="/../images/scom9.jpg"></p>
+<p> <img src="/../images/scom10.jpg"></p>
+<p> If any orphaned resource is found, use this command to remove the resource.</p>
+ <figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">Remove-ClusterResource</span> <span class="literal">-Name</span> <span class="string">&quot;&lt;Name of the resource&gt;&quot;</span> <span class="literal">-Force</span></span><br></pre></td></tr></table></figure>
+
+<p> After that, flush health service cache on the node and monitor for some time. If it goes well, the SQL Server Network Name and the Cluster Name Object should occur in <strong>Agentless Managed</strong>, then the SQL DB engines should be discovered gradually.</p>
+</li>
+</ol>
+<h3 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h3><p><a target="_blank" rel="noopener" href="https://blog.coeo.com/karlgrambow/2014/10/20/scom-wont-discover-my-sql-server-or-cluster" title="SCOM Won&#39;t Discover My SQL Server (Or Cluster) ">SCOM Won’t Discover My SQL Server (Or Cluster) </a></p>
+<p><a target="_blank" rel="noopener" href="https://social.technet.microsoft.com/Forums/en-US/5d60cc62-d5d9-4077-b051-092cfdedbe43/cluster-not-appearing-in-agentless-managed?forum=operationsmanagergeneral" title="Cluster not appearing in Agentless Managed">Cluster not appearing in Agentless Managed</a></p>
+<p><a target="_blank" rel="noopener" href="https://blog.tyang.org/2014/03/29/discovery-ms-clusters-kind/" title="Discovery for MS Clusters of Any Kind">Discovery for MS Clusters of Any Kind</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://windyztree.github.io/2020/04/29/scom_sql_discovery/" data-id="cuidcyhKSEZcdBF0D7mQXHCbL" data-title="SCOM - SQL DB Engine Discovery Mechanism on Cluster" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Cluster/" rel="tag">Cluster</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SCOM/" rel="tag">SCOM</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SQL-Discovery/" rel="tag">SQL Discovery</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2020/05/10/sco_scom_ip/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          SCORCH - SCOM IP – &#34;Failed to connect. Please verify your connection settings.&#34;
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/11/24/sco_web_fail/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Fail to connect to Orchestrator Web Service</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Operations-Manager/">System Center Operations Manager</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Orchestrator/">System Center Orchestrator</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Service-Manager/">System Center Service Manager</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BB%BC%E5%90%88/">综合</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AD-Connector/" rel="tag">AD Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Certificate/" rel="tag">Certificate</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cluster/" rel="tag">Cluster</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Communication/" rel="tag">Communication</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connection/" rel="tag">Connection</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connector/" rel="tag">Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Deployment/" rel="tag">Deployment</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Gateway/" rel="tag">Gateway</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Integration-Pack/" rel="tag">Integration Pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kubernetes/" rel="tag">Kubernetes</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Operations-Manager/" rel="tag">Operations Manager</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Postman/" rel="tag">Postman</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Relationship/" rel="tag">Relationship</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Rest-API/" rel="tag">Rest API</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCOM/" rel="tag">SCOM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCORCH/" rel="tag">SCORCH</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCSM/" rel="tag">SCSM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SPN/" rel="tag">SPN</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Discovery/" rel="tag">SQL Discovery</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Upgrade/" rel="tag">Upgrade</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Console/" rel="tag">Web Console</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Service/" rel="tag">Web Service</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/WordPress/" rel="tag">WordPress</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Workgroup/" rel="tag">Workgroup</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" rel="tag">云服务器</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%8D%9A%E5%AE%A2/" rel="tag">博客</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AD-Connector/" style="font-size: 10px;">AD Connector</a> <a href="/tags/Certificate/" style="font-size: 10px;">Certificate</a> <a href="/tags/Cluster/" style="font-size: 10px;">Cluster</a> <a href="/tags/Communication/" style="font-size: 10px;">Communication</a> <a href="/tags/Connection/" style="font-size: 15px;">Connection</a> <a href="/tags/Connector/" style="font-size: 10px;">Connector</a> <a href="/tags/Deployment/" style="font-size: 10px;">Deployment</a> <a href="/tags/Gateway/" style="font-size: 10px;">Gateway</a> <a href="/tags/Integration-Pack/" style="font-size: 10px;">Integration Pack</a> <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/Network/" style="font-size: 10px;">Network</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Operations-Manager/" style="font-size: 10px;">Operations Manager</a> <a href="/tags/PHP/" style="font-size: 10px;">PHP</a> <a href="/tags/Postman/" style="font-size: 10px;">Postman</a> <a href="/tags/PowerShell/" style="font-size: 10px;">PowerShell</a> <a href="/tags/Relationship/" style="font-size: 10px;">Relationship</a> <a href="/tags/Rest-API/" style="font-size: 10px;">Rest API</a> <a href="/tags/SCOM/" style="font-size: 20px;">SCOM</a> <a href="/tags/SCORCH/" style="font-size: 20px;">SCORCH</a> <a href="/tags/SCSM/" style="font-size: 10px;">SCSM</a> <a href="/tags/SPN/" style="font-size: 10px;">SPN</a> <a href="/tags/SQL-Discovery/" style="font-size: 10px;">SQL Discovery</a> <a href="/tags/Ubuntu/" style="font-size: 10px;">Ubuntu</a> <a href="/tags/Upgrade/" style="font-size: 10px;">Upgrade</a> <a href="/tags/Web-Console/" style="font-size: 10px;">Web Console</a> <a href="/tags/Web-Service/" style="font-size: 15px;">Web Service</a> <a href="/tags/WordPress/" style="font-size: 10px;">WordPress</a> <a href="/tags/Workgroup/" style="font-size: 10px;">Workgroup</a> <a href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" style="font-size: 10px;">云服务器</a> <a href="/tags/%E5%8D%9A%E5%AE%A2/" style="font-size: 10px;">博客</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">January 2026</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2026/01/24/hello-world/">Hello World</a>
+          </li>
+        
+          <li>
+            <a href="/2026/01/24/k8s_deploy_tips/">参考掘金 K8s 部署教程时的防踩坑经验分享</a>
+          </li>
+        
+          <li>
+            <a href="/2020/05/10/sco_scom_ip/">SCORCH - SCOM IP – &#34;Failed to connect. Please verify your connection settings.&#34;</a>
+          </li>
+        
+          <li>
+            <a href="/2020/04/29/scom_sql_discovery/">SCOM - SQL DB Engine Discovery Mechanism on Cluster</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/24/sco_web_fail/">Fail to connect to Orchestrator Web Service</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2026 Wendi Cai<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

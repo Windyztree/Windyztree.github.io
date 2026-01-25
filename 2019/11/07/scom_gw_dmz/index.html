@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>Troubleshooting Gateway or Workgroup Communication Issue in SCOM | Wendi Cai&#39;s Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="If you have deployed SCOM Gateway in your environment, or SCOM agent on a workgroup machine, but they can’t communicate with management server, you can refer to the following steps for troubleshooting">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Troubleshooting Gateway or Workgroup Communication Issue in SCOM">
+<meta property="og:url" content="http://windyztree.github.io/2019/11/07/scom_gw_dmz/index.html">
+<meta property="og:site_name" content="Wendi Cai&#39;s Blog">
+<meta property="og:description" content="If you have deployed SCOM Gateway in your environment, or SCOM agent on a workgroup machine, but they can’t communicate with management server, you can refer to the following steps for troubleshooting">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://windyztree.github.io/images/scom1.png">
+<meta property="og:image" content="http://windyztree.github.io/images/scom2.png">
+<meta property="og:image" content="http://windyztree.github.io/images/scom3.png">
+<meta property="og:image" content="http://windyztree.github.io/images/scom4.png">
+<meta property="og:image" content="http://windyztree.github.io/images/scom5.png">
+<meta property="article:published_time" content="2019-11-06T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-25T05:23:37.412Z">
+<meta property="article:author" content="Wendi Cai">
+<meta property="article:tag" content="Certificate">
+<meta property="article:tag" content="Communication">
+<meta property="article:tag" content="Gateway">
+<meta property="article:tag" content="Operations Manager">
+<meta property="article:tag" content="SCOM">
+<meta property="article:tag" content="Workgroup">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://windyztree.github.io/images/scom1.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Wendi Cai's Blog" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.2.0/css/fork-awesome.min.css">
+
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Wendi Cai&#39;s Blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Search"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://windyztree.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-scom_gw_dmz" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/11/07/scom_gw_dmz/" class="article-date">
+  <time class="dt-published" datetime="2019-11-06T16:00:00.000Z" itemprop="datePublished">2019-11-07</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/System-Center-Operations-Manager/">System Center Operations Manager</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      Troubleshooting Gateway or Workgroup Communication Issue in SCOM
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>If you have deployed SCOM Gateway in your environment, or SCOM agent on a workgroup machine, but they can’t communicate with management server, you can refer to the following steps for troubleshooting.</p>
+<p>Based on my experience, these troubleshooting steps can help resolve &gt;50% of Gateway&#x2F;Workgroup communication issues.</p>
+<h3 id="Troubleshooting-Steps"><a href="#Troubleshooting-Steps" class="headerlink" title="Troubleshooting Steps"></a>Troubleshooting Steps</h3><ul>
+<li><p>Make sure <strong>Microsoft Monitoring Agent</strong> service is running, and Startup type is set to <strong>Automatic</strong> on management server and gateway&#x2F;workgroup.</p>
+</li>
+<li><p>Check the gateway&#x2F;workgroup status in SCOM console.</p>
+</li>
+<li><p><strong>Check Operations Manager event log</strong></p>
+<p>  If the certificate is recreated, we should find Event ID 20053 in Operations Manager event log on both the management server and gateway server&#x2F;workgroup, indicating the certificate was loaded successfully.</p>
+</li>
+</ul>
+<p><img src="/../images/scom1.png"></p>
+<pre><code>If you find a related warning or error in event log, refer to this blog for explanation: [Troubleshoot workgroup/gateway issue with event log](https://techcommunity.microsoft.com/t5/System-Center-Blog/Monitoring-OpsMgr-workgroup-clients-Part-2-Installing/ba-p/350806)
+</code></pre>
+<ul>
+<li><p><strong>Ensure port 5723 is open</strong></p>
+<p>  On gateway&#x2F;workgroup:</p>
+  <figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">telnet &lt;Management Server FQDN&gt; <span class="number">5723</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>DNS</strong></p>
+<p>  Make sure that both sides are reachable via hostname (just ping). If it’s not working add the computers in DNS or in the <strong>Host</strong> file (<strong>C:\Windows\System32\Drivers\ETC\Host</strong>).</p>
+</li>
+<li><p><strong>Check certificate</strong></p>
+<p>  Computer Certificate:</p>
+<ol>
+<li>Go to both management server and gateway server&#x2F;workgroup, navigate to <strong>HKLM\Software\Microsoft\Microsoft Operations Manager\3.0\Machine Settings</strong> and check the value of <strong>ChannelCertificateSerialNumber</strong>.</li>
+</ol>
+<p>  <img src="/../images/scom2.png"></p>
+<p>  Then, open <strong>mmc</strong> -&gt; <strong>File</strong> -&gt; <strong>Add or Remove Snap-ins</strong> -&gt; <strong>Certificates</strong> -&gt; <strong>Add</strong>, select <strong>Computer account</strong>, then <strong>Next</strong> and <strong>Finish</strong>. In <strong>Personal</strong> -&gt; <strong>Certificates</strong>, open the certificate that you install on management server&#x2F;gateway server&#x2F;workgroup agent, click on <strong>Details</strong> tab and check the <strong>Serial Number</strong>. The <strong>Serial number</strong> and the registry value <strong>ChannelCertificateSerialNumber</strong> should match each other.</p>
+<p>  <img src="/../images/scom3.png"></p>
+<ol start="2">
+<li><p>Confirm computer certificates on both sides are issued by the same CA.</p>
+</li>
+<li><p>The certificate must includes the private key.</p>
+</li>
+</ol>
+<p>  <img src="/../images/scom4.png"></p>
+<ol start="4">
+<li>The certificate must be trusted all the way to the root (Chain)</li>
+</ol>
+<p>  <img src="/../images/scom5.png"></p>
+<ol start="5">
+<li><p>The <strong>Common Name (CN)</strong> value in the certificate’s <strong>Subject</strong> field must match the FQDN of the computer where you imported the certificate.</p>
+</li>
+<li><p>Ensure the certificate includes both Server Authentication OID and Client Authentication OID in the Enhanced Key Usage property.</p>
+</li>
+<li><p>Check expiration date.</p>
+</li>
+<li><p>Other comments:<br>  Hash Algorithm does not need to be same between source and target.  (Ex. SHA1 on MS and SHA256 on GTW works)<br>  Key size can be 2048 and 4096.</p>
+</li>
+</ol>
+<p>  Trusted Root Certificate:</p>
+<p>  Confirm trusted Root Certificate is well imported and can be found under <strong>Trusted Root Certification Authorities</strong> – <strong>Certificates</strong>. Check expiration date.</p>
+</li>
+<li><p>On the gateway server, go to <strong>HKLM\Software\ Microsoft\Microsoft Operation Manager\3.0\Server Management Group&lt;MG Name&gt;\Parent Health Services\0</strong>. Ensure the <strong>AuthenticationName</strong> and the <strong>NetworkName</strong> match and is FQDN of management server.</p>
+<p>  In workgroup scenario, the path is <strong>HKLM\Software\ Microsoft\Microsoft Operation Manager\3.0\Agent Management Group&lt;MG Name&gt;\Parent Health Services\0</strong></p>
+</li>
+<li><p>Ensure the assigned management server in Control Panel is correct.</p>
+</li>
+<li><p><strong>Duplicate SPN</strong></p>
+<p>  On management server, identify the duplicate SPN. Any duplicate SPN’s will be listed.</p>
+  <figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">setspn <span class="literal">-x</span></span><br></pre></td></tr></table></figure>
+
+<p>  Delete the duplicate SPN</p>
+  <figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">setspn –d &lt;SPN&gt; &lt;object&gt;</span><br></pre></td></tr></table></figure>
+
+<p>  Example:</p>
+  <figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">setspn <span class="literal">-D</span> http/daserver daserver1</span><br><span class="line">setspn –d host/fscluster member</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h3><p><a target="_blank" rel="noopener" href="http://blog.ctglobalservices.com/operations-manager-scom/msk/common-issues-when-working-with-certificates-in-opsmgr/">Common issues when working with certificates in OpsMgr</a></p>
+<p><a target="_blank" rel="noopener" href="https://support.microsoft.com/en-us/help/947691/when-you-try-to-install-a-system-center-operations-manager-agent-on-a">When you try to install a System Center Operations Manager agent on a workgroup computer without using a gateway server, Operations Manager cannot see the workgroup computer</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://windyztree.github.io/2019/11/07/scom_gw_dmz/" data-id="cuidJbbNhc8JIQYqGgb0diC_6" data-title="Troubleshooting Gateway or Workgroup Communication Issue in SCOM" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Certificate/" rel="tag">Certificate</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Communication/" rel="tag">Communication</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Gateway/" rel="tag">Gateway</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Operations-Manager/" rel="tag">Operations Manager</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SCOM/" rel="tag">SCOM</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Workgroup/" rel="tag">Workgroup</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/11/11/sco_web/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          SCORCH Web Service API
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/09/30/scsm_ad_issue/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Changes of user relationship in AD can’t be correctly synchronized to SCSM</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Operations-Manager/">System Center Operations Manager</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Orchestrator/">System Center Orchestrator</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Service-Manager/">System Center Service Manager</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BB%BC%E5%90%88/">综合</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AD-Connector/" rel="tag">AD Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Certificate/" rel="tag">Certificate</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cluster/" rel="tag">Cluster</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Communication/" rel="tag">Communication</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connection/" rel="tag">Connection</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connector/" rel="tag">Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Deployment/" rel="tag">Deployment</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Gateway/" rel="tag">Gateway</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Integration-Pack/" rel="tag">Integration Pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kubernetes/" rel="tag">Kubernetes</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Operations-Manager/" rel="tag">Operations Manager</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Postman/" rel="tag">Postman</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Relationship/" rel="tag">Relationship</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Rest-API/" rel="tag">Rest API</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCOM/" rel="tag">SCOM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCORCH/" rel="tag">SCORCH</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCSM/" rel="tag">SCSM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SPN/" rel="tag">SPN</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Discovery/" rel="tag">SQL Discovery</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Upgrade/" rel="tag">Upgrade</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Console/" rel="tag">Web Console</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Service/" rel="tag">Web Service</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/WordPress/" rel="tag">WordPress</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Workgroup/" rel="tag">Workgroup</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" rel="tag">云服务器</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%8D%9A%E5%AE%A2/" rel="tag">博客</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AD-Connector/" style="font-size: 10px;">AD Connector</a> <a href="/tags/Certificate/" style="font-size: 10px;">Certificate</a> <a href="/tags/Cluster/" style="font-size: 10px;">Cluster</a> <a href="/tags/Communication/" style="font-size: 10px;">Communication</a> <a href="/tags/Connection/" style="font-size: 15px;">Connection</a> <a href="/tags/Connector/" style="font-size: 10px;">Connector</a> <a href="/tags/Deployment/" style="font-size: 10px;">Deployment</a> <a href="/tags/Gateway/" style="font-size: 10px;">Gateway</a> <a href="/tags/Integration-Pack/" style="font-size: 10px;">Integration Pack</a> <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/Network/" style="font-size: 10px;">Network</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Operations-Manager/" style="font-size: 10px;">Operations Manager</a> <a href="/tags/PHP/" style="font-size: 10px;">PHP</a> <a href="/tags/Postman/" style="font-size: 10px;">Postman</a> <a href="/tags/PowerShell/" style="font-size: 10px;">PowerShell</a> <a href="/tags/Relationship/" style="font-size: 10px;">Relationship</a> <a href="/tags/Rest-API/" style="font-size: 10px;">Rest API</a> <a href="/tags/SCOM/" style="font-size: 20px;">SCOM</a> <a href="/tags/SCORCH/" style="font-size: 20px;">SCORCH</a> <a href="/tags/SCSM/" style="font-size: 10px;">SCSM</a> <a href="/tags/SPN/" style="font-size: 10px;">SPN</a> <a href="/tags/SQL-Discovery/" style="font-size: 10px;">SQL Discovery</a> <a href="/tags/Ubuntu/" style="font-size: 10px;">Ubuntu</a> <a href="/tags/Upgrade/" style="font-size: 10px;">Upgrade</a> <a href="/tags/Web-Console/" style="font-size: 10px;">Web Console</a> <a href="/tags/Web-Service/" style="font-size: 15px;">Web Service</a> <a href="/tags/WordPress/" style="font-size: 10px;">WordPress</a> <a href="/tags/Workgroup/" style="font-size: 10px;">Workgroup</a> <a href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" style="font-size: 10px;">云服务器</a> <a href="/tags/%E5%8D%9A%E5%AE%A2/" style="font-size: 10px;">博客</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">January 2026</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2026/01/24/hello-world/">Hello World</a>
+          </li>
+        
+          <li>
+            <a href="/2026/01/24/k8s_deploy_tips/">参考掘金 K8s 部署教程时的防踩坑经验分享</a>
+          </li>
+        
+          <li>
+            <a href="/2020/05/10/sco_scom_ip/">SCORCH - SCOM IP – &#34;Failed to connect. Please verify your connection settings.&#34;</a>
+          </li>
+        
+          <li>
+            <a href="/2020/04/29/scom_sql_discovery/">SCOM - SQL DB Engine Discovery Mechanism on Cluster</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/24/sco_web_fail/">Fail to connect to Orchestrator Web Service</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2026 Wendi Cai<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

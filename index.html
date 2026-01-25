@@ -199,12 +199,16 @@
 
 
   
-    <article id="post-wordpress_blog" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+    <article id="post-sco_scom_ip" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
-    <a href="/2019/09/21/wordpress_blog/" class="article-date">
-  <time class="dt-published" datetime="2019-09-20T16:00:00.000Z" itemprop="datePublished">2019-09-21</time>
+    <a href="/2020/05/10/sco_scom_ip/" class="article-date">
+  <time class="dt-published" datetime="2020-05-09T16:00:00.000Z" itemprop="datePublished">2020-05-10</time>
 </a>
     
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/System-Center-Orchestrator/">System Center Orchestrator</a>
+  </div>
+
   </div>
   <div class="article-inner">
     
@@ -213,7 +217,7 @@
         
   
     <h1 itemprop="name">
-      <a class="p-name article-title" href="/2019/09/21/wordpress_blog/">如何用WordPress + Nginx + MySQL + PHP搭建个人博客</a>
+      <a class="p-name article-title" href="/2020/05/10/sco_scom_ip/">SCORCH - SCOM IP – &#34;Failed to connect. Please verify your connection settings.&#34;</a>
     </h1>
   
 
@@ -221,179 +225,621 @@
     
     <div class="e-content article-entry" itemprop="articleBody">
       
-        <h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><h3 id="1-云服务器"><a href="#1-云服务器" class="headerlink" title="1. 云服务器"></a>1. 云服务器</h3><p>我选用的是阿里云服务器，操作系统是Ubuntu。因此本文搭建过程中涉及到的具体操作都以Ubuntu为例，其他操作系统可类推。</p>
-<h3 id="2-域名及云解析DNS"><a href="#2-域名及云解析DNS" class="headerlink" title="2. 域名及云解析DNS"></a>2. 域名及云解析DNS</h3><p>有了服务器后，第二步便是申请域名及购买云解析DNS，也是在阿里云上购买的。阿里云会根据我们申请的域名个数自动调整云解析DNS的域名个数和费用。</p>
-<h2 id="主要步骤"><a href="#主要步骤" class="headerlink" title="主要步骤"></a>主要步骤</h2><p>这里给出用WordPress + Nginx + MySQL + PHP搭建个人博客的主要步骤，让大家对整体流程有一个完整的概念。详细步骤及操作方法见后文。文末附有可能遇到的问题及解决方案。</p>
-<ol>
-<li>下载WordPress</li>
-<li>安装PHP</li>
-<li>安装Nginx</li>
-<li>安装MySQL</li>
-<li>创建WordPress用户名和数据库</li>
-<li>复制WordPress文件到网站根目录</li>
-<li>配置Nginx使用PHP及我们申请好的域名</li>
-<li>为WordPress设置<code>wp-config.php</code>文件</li>
-<li>安装及配置WordPress</li>
-</ol>
-<h2 id="详细步骤"><a href="#详细步骤" class="headerlink" title="详细步骤"></a>详细步骤</h2><h3 id="一、下载WordPress"><a href="#一、下载WordPress" class="headerlink" title="一、下载WordPress"></a>一、下载WordPress</h3><ol>
-<li>在WordPress官网下载安装文件到PC。</li>
-<li>下载并安装WinSCP。通过WinSCP将WordPress安装文件从PC传输到Ubuntu服务器上。</li>
-<li>解压WordPress安装文件。</li>
-</ol>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt install unzip</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">unzip wordpress-5.2.1.zip</span><br></pre></td></tr></table></figure>
-
-<h3 id="二、安装PHP"><a href="#二、安装PHP" class="headerlink" title="二、安装PHP"></a>二、安装PHP</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt install php</span><br></pre></td></tr></table></figure>
-
-<p>检查PHP的安装路径：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">whereis php-fpm</span><br></pre></td></tr></table></figure>
-
-<p>启动PHP：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">service php7.2-fpm start</span><br></pre></td></tr></table></figure>
-
-<h3 id="三、安装Nginx"><a href="#三、安装Nginx" class="headerlink" title="三、安装Nginx"></a>三、安装Nginx</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt install nginx</span><br></pre></td></tr></table></figure>
-
-<p>启动Nginx：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">service nginx start</span><br></pre></td></tr></table></figure>
-
-<p>启动完成后，在浏览器中访问服务器公网IP<code>http://xx.xx.xx.xx</code>，应该可以看到如下页面。实际上打开的是<code>/var/www/html/</code>下的<code>index.nginx-debian.html</code>页面。</p>
-<p><img src="/../images/nginx.png"></p>
-<h3 id="四、安装MySQL"><a href="#四、安装MySQL" class="headerlink" title="四、安装MySQL"></a>四、安装MySQL</h3><p>我们需要为WordPress创建一个数据库，这里选用的是MySQL数据库服务。</p>
-<p>安装MySQL:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt install mysql-server</span><br><span class="line"><span class="built_in">sudo</span> apt install mysql-client</span><br><span class="line"><span class="built_in">sudo</span> apt install libmysqlclient-dev</span><br></pre></td></tr></table></figure>
-
-<p>安装完后可以通过以下命令来检查安装结果，如果处于LISTEN状态，则安装成功。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> netstat -tap | grep mysql</span><br></pre></td></tr></table></figure>
-
-<p><img src="/../images/mysql.png"></p>
-<h3 id="五、创建WordPress用户名和数据库"><a href="#五、创建WordPress用户名和数据库" class="headerlink" title="五、创建WordPress用户名和数据库"></a>五、创建WordPress用户名和数据库</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 替换*adminusername*为你的数据库用户名</span></span><br><span class="line">$ mysql -u *adminusername* -p</span><br><span class="line">Enter password:</span><br><span class="line">Welcome to the MySQL monitor.  Commands end with ; or \g.</span><br><span class="line">Your MySQL connection <span class="built_in">id</span> is 5340 to server version: 3.23.54</span><br><span class="line">Type <span class="string">&#x27;help;&#x27;</span> or <span class="string">&#x27;\h&#x27;</span> <span class="keyword">for</span> <span class="built_in">help</span>. Type <span class="string">&#x27;\c&#x27;</span> to clear the buffer.</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建WordPress数据库，替换*databasename*为数据库名称，如blogdb</span></span><br><span class="line">mysql&gt; CREATE DATABASE *databasename*;</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 替换dabasename, wordpressusername, hostname和password。hostname通常是localhost</span></span><br><span class="line">mysql&gt; GRANT ALL PRIVILEGES ON databasename.* TO <span class="string">&quot;wordpressusername&quot;</span>@<span class="string">&quot;hostname&quot;</span></span><br><span class="line">    -&gt; IDENTIFIED BY <span class="string">&quot;password&quot;</span>;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line">mysql&gt; FLUSH PRIVILEGES;</span><br><span class="line">Query OK, 0 rows affected (0.01 sec)</span><br><span class="line">mysql&gt; EXIT</span><br><span class="line">Bye</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
-
-<p>下面是我替换关键内容后的范例：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">$ mysql -u root -p</span><br><span class="line">Enter password:</span><br><span class="line">Welcome to the MySQL monitor.  Commands end with ; or \g.</span><br><span class="line">Your MySQL connection <span class="built_in">id</span> is 5340 to server version: 3.23.54</span><br><span class="line">Type <span class="string">&#x27;help;&#x27;</span> or <span class="string">&#x27;\h&#x27;</span> <span class="keyword">for</span> <span class="built_in">help</span>. Type <span class="string">&#x27;\c&#x27;</span> to clear the buffer.</span><br><span class="line">mysql&gt; CREATE DATABASE blogdb;</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">mysql&gt; GRANT ALL PRIVILEGES ON blogdb.* TO <span class="string">&quot;wendi&quot;</span>@<span class="string">&quot;localhost&quot;</span></span><br><span class="line">    -&gt; IDENTIFIED BY <span class="string">&quot;mypassword&quot;</span>;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line">mysql&gt; FLUSH PRIVILEGES;</span><br><span class="line">Query OK, 0 rows affected (0.01 sec)</span><br><span class="line">mysql&gt; EXIT</span><br><span class="line">Bye</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
-
-<h3 id="六、复制WordPress文件到网站根目录"><a href="#六、复制WordPress文件到网站根目录" class="headerlink" title="六、复制WordPress文件到网站根目录"></a>六、复制WordPress文件到网站根目录</h3><p>将解压后的WordPress目录下所有内容（无需转移目录本身）转移到网站根目录下。网站根目录默认为<code>/var/www/html/</code>，为了便于管理，我建立了路径<code>/var/www/www.wendicai.net/</code>作为我的网站根目录。</p>
-<h3 id="七、配置Nginx使用PHP及我们申请好的域名"><a href="#七、配置Nginx使用PHP及我们申请好的域名" class="headerlink" title="七、配置Nginx使用PHP及我们申请好的域名"></a>七、配置Nginx使用PHP及我们申请好的域名</h3><p>修改Nginx的default配置文件，该文件位于<code>/etc/nginx/sites-available/default</code>。需要更改的地方已在下面列出。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">server &#123;</span><br><span class="line">    <span class="comment"># 【更改点1】因为我们要使用域名访问，这里删除default_server</span></span><br><span class="line">    listen 80;</span><br><span class="line">    listen [::]:80;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 【更改点2】网站根目录，默认路径为/var/www/html</span></span><br><span class="line">    <span class="comment"># 为了便于管理，我建立了路径/var/www/www.wendicai.net为我的网站根目录</span></span><br><span class="line">    <span class="comment"># 如果使用非默认路径，需要将原路径/var/www/html/下的所有文件拷贝到新路径中</span></span><br><span class="line">    root /var/www/www.wendicai.net;</span><br><span class="line"></span><br><span class="line">    <span class="comment">#【更改点3】在index.html前加上index.php，以支持WordPress</span></span><br><span class="line">    <span class="comment"># Add index.php to the list if you are using PHP</span></span><br><span class="line">    index index.php index.html index.htm index.nginx-debian.html;</span><br><span class="line"></span><br><span class="line">    <span class="comment">#【更改点4】替换“_”为我们申请好的域名</span></span><br><span class="line">    server_name www.wendicai.net;</span><br><span class="line">    location / &#123;</span><br><span class="line">        <span class="comment"># First attempt to serve request as file, then</span></span><br><span class="line">        <span class="comment"># as directory, then fall back to displaying a 404.</span></span><br><span class="line">        try_files <span class="variable">$uri</span> <span class="variable">$uri</span>/ =404;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">#【更改点5】取消此部分注释，因为WordPress需要用到PHP。如果安装的PHP版本不是7.0，需要手动改下版本号</span></span><br><span class="line">    <span class="comment"># pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000</span></span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    location ~ \.php$ &#123;</span><br><span class="line">        include snippets/fastcgi-php.conf;</span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    <span class="comment">#   # With php7.0-cgi alone:</span></span><br><span class="line">    <span class="comment">#   fastcgi_pass 127.0.0.1:9000;</span></span><br><span class="line">    <span class="comment">#   # With php7.0-fpm:</span></span><br><span class="line">        fastcgi_pass unix:/run/php/php7.0-fpm.sock;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># deny access to .htaccess files, if Apache&#x27;s document root</span></span><br><span class="line">    <span class="comment"># concurs with nginx&#x27;s one</span></span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    location ~ /\.ht &#123;</span><br><span class="line">        deny all;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>配置修改后需要重启Nginx服务生效：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> service nginx restart</span><br></pre></td></tr></table></figure>
-
-<h4 id="如何配置Nginx绑定多个域名"><a href="#如何配置Nginx绑定多个域名" class="headerlink" title="如何配置Nginx绑定多个域名"></a>如何配置Nginx绑定多个域名</h4><p>值得一提的是，这台Ubuntu服务器是我和小伙伴共用的，我们各自申请了不同的域名，因此需要让Nginx同时识别两个域名，且两个域名对应各自的页面内容。</p>
-<p>具体的配置方法如下：</p>
-<ol>
-<li><strong>分别给每个域名创建一个根目录</strong></li>
-</ol>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@WebServer:/var/www# <span class="built_in">ls</span></span><br><span class="line">www.wendicai.net  www.xia-weiwen.com</span><br></pre></td></tr></table></figure>
-
-<p>并将原路径<code>/var/www/html/</code>下的所有文件拷贝过去。</p>
-<ol start="2">
-<li><strong>分别给每个域名创建一个配置文件</strong></li>
-</ol>
-<p>在<code>/etc/nginx/vhost</code>路径下为每个域名创建一个配置文件，命名为<code>vhost_&lt;域名关键字&gt;.conf</code>。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@Ubuntu:/etc/nginx/vhost# <span class="built_in">ls</span></span><br><span class="line">vhost_wendicai.conf  vhost_xia-weiwen.conf</span><br></pre></td></tr></table></figure>
-
-<p>将<code>/etc/nginx/sites-available/default</code>文件内容拷贝到新配置文件中，并按前文所述的配置文件修改方法，分别修改两个域名的配置信息。root网站根目录应分别为步骤1中创建的对应目录。</p>
-<ol start="3">
-<li><strong>将新配置文件路径加入到<code>nginx.config</code>中</strong></li>
-</ol>
-<p>修改<code>/etc/nginx/nginx.conf</code>文件，在http代码块中添加新的配置文件路径：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">http &#123;</span><br><span class="line">    ......</span><br><span class="line">    include /etc/nginx/conf.d/*.conf;</span><br><span class="line">    include /etc/nginx/sites-enabled/*;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 添加新配置文件所在路径/etc/nginx/vhost/*.conf</span></span><br><span class="line">    include /etc/nginx/vhost/*.conf; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<ol start="4">
-<li><strong>重启Nginx服务以生效</strong></li>
-</ol>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">service nginx restart</span><br></pre></td></tr></table></figure>
-
-<p>现在，分别访问两个域名<code>www.wendicai.net</code>和<code>www.xia-weiwen.com</code>，实际打开的页面将分别是<code>/var/www/www.wendicai.net</code>和<code>/var/www/www.xia-weiwen.com</code>下的文件。</p>
-<h3 id="八、为WordPress设置wp-config-php文件"><a href="#八、为WordPress设置wp-config-php文件" class="headerlink" title="八、为WordPress设置wp-config.php文件"></a>八、为WordPress设置wp-config.php文件</h3><p>在浏览器中访问<code>http://&lt;域名&gt;/wp-admin/install.php</code>, 出现以下页面，要求填入数据库信息。<br><img src="/../images/wordpress.png"></p>
-<p>说明：</p>
-<p><code>Database Name</code>是步骤六中创建的数据库名称，我的是blogdb。</p>
-<p><code>User Name</code>和<code>Password</code>分别是是步骤六中创建的数据库用户名和密码。</p>
-<p><code>Database Host</code>与步骤六中设定的<code>hostname</code>一致，通常是<code>localhost</code>。<br><code>Table Prefix</code>可以不改，但由于我们要在同一个数据库中管理两个域名下的数据，我在默认前缀后又加上了各自的域名。</p>
-<p>点击<code>Submit</code>，可能会遇到以下两种情况：</p>
-<p>配置文件自动修改成功。此时不要点击<code>Run the Install</code>，进入步骤八继续。</p>
-<p>如果WordPress无法查找到<code>wp-config.php</code>文件，则会根据我们填入的信息自动生成配置文件内容，并建议我们手动创建并编辑<code>wp-config.php</code>文件。</p>
-<p>如果是第二种情况，我们只需要在WordPress的解压路径中找到<code>wp-config-sample.php</code>文件，将其重命名为<code>wp-config.php</code>，并将上面自动生成的配置文件内容拷贝到<code>wp-config.php</code>中。</p>
-<h3 id="九、安装WordPress"><a href="#九、安装WordPress" class="headerlink" title="九、安装WordPress"></a>九、安装WordPress</h3><ul>
-<li>如果配置文件自动修改成功，此时点击<code>Run the install</code>安装即可。</li>
-<li>如果<code>wp-config.php</code>为手动创建，需要重新访问<code>http://&lt;域名&gt;/wp-admin/install.php</code>，进入安装。<br>填入以下个人信息和偏好设置后，点击<code>Install WordPress</code>进行安装。这一页填入的信息将来在WordPress后台<code>http://&lt;域名&gt;/wp-admin</code>都是可更改的。</li>
+        <h3 id="Issue-Definition"><a href="#Issue-Definition" class="headerlink" title="Issue Definition"></a>Issue Definition</h3><p>After regsitering and deploying SCOM Integration Pack (IP) in Orchestrator, we need to configure a connection to specify link to your SCOM management server (Refer to <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/system-center/orchestrator/integration-pack-for-operations-manager?view=sc-orch-2019" title="Configure the connection">Configure the connection</a>).</p>
+<p>However, when you click on the <strong>Test Connection</strong> button, you might receive the error <font color=#ff7f50><em>“Failed to connect. Pleae verify your connection settings.”</em></font></p>
+<h3 id="Troubleshooting-Tips"><a href="#Troubleshooting-Tips" class="headerlink" title="Troubleshooting Tips"></a>Troubleshooting Tips</h3><h4 id="Verify-Configurations"><a href="#Verify-Configurations" class="headerlink" title="Verify Configurations"></a>Verify Configurations</h4><ul>
+<li><p>Ensure the account we use for connection a member of <strong>local Administrator</strong> on the SCOM server and a member of <strong>Operations Manager Administrators</strong> user role.</p>
+</li>
+<li><p>(<strong>Only for SCOM 2012 IP</strong>) A SCOM console of the same version must be installed on the server that hosts the Runbook Designer. And we should be able to connect to SCOM server from the console with the same account.</p>
+<p>  Note: SCOM 2016 IP no longer requires SCOM console to be installed on Runbook Designer.</p>
+</li>
+<li><p>Check whether TLS 1.0 is disabled on SCOM management server and SCORCH server.</p>
+<p>  We have a known issue that connection fails with the same error in SCORCH 2016 + SCOM 2016 environment with TLS 1.0 disabled. If TLS 1.0 is disabled in your environment, try enabling it an testing the connection again.</p>
+</li>
+<li><p>Ensure .Net Framwork 3.5 is installed.</p>
+</li>
 </ul>
-<hr>
-<p>安装成功啦！接下来就可以登录进入后台愉快地玩耍了~</p>
-<p>WordPress怎么玩？可以参考WordPress的官方文档。</p>
-<p>WordPress官方中文文档：<a target="_blank" rel="noopener" href="http://codex.wordpress.org.cn/%E9%A6%96%E9%A1%B5" title="http:&#x2F;&#x2F;codex.wordpress.org.cn&#x2F;%E9%A6%96%E9%A1%B5">http://codex.wordpress.org.cn/%E9%A6%96%E9%A1%B5</a></p>
-<p>使用WordPress：<a target="_blank" rel="noopener" href="http://codex.wordpress.org.cn/%E4%BD%BF%E7%94%A8_WordPress" title="http:&#x2F;&#x2F;codex.wordpress.org.cn&#x2F;%E4%BD%BF%E7%94%A8_WordPress">http://codex.wordpress.org.cn/%E4%BD%BF%E7%94%A8_WordPress</a></p>
-<h2 id="可能遇到的问题"><a href="#可能遇到的问题" class="headerlink" title="可能遇到的问题"></a>可能遇到的问题</h2><p>我在搭建过程中遇到了不少问题，在这里将这些问题与其解决方法分享出来，希望可以帮助大家少走弯路。</p>
-<ul>
-<li><strong>“nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)”</strong></li>
-</ul>
-<p>Nginx安装完成后，启动Nginx失败并出现以下报错</p>
-<p><img src="/../images/nginx_error.png"></p>
-<p>这是因为80端口被其他服务占用。可以通过以下命令来检查：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsof -i:80</span><br></pre></td></tr></table></figure>
-
-<p>我的情况是云服务器本身预装了apache，从结果中可以看出80端口被apaceh2占用。</p>
-<p><img src="/../images/nginx_error2.png"></p>
-<p>将apache2服务停掉后，成功启动Nginx。</p>
-<p><img src="/../images/nginx_error2.png"></p>
-<ul>
-<li><strong>主题、插件等“安装失败：无法创建目录”</strong></li>
-</ul>
-<p><img src="/../images/theme_error.png"></p>
-<p>用以下命令添加权限：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">chmod</span> -R 777 /var/www/www.wendicai.net <span class="comment"># 网站根目录</span></span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>“在裁剪您的图像时发生了错误”</strong></li>
-</ul>
-<p>在WordPress中裁剪图片时，报错“在裁剪您的图像时发生了错误”。</p>
-<p>这是由于PHP的GD库未安装。运行以下命令安装：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-get install php7.2-gd</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>设置中英文摘要长度</strong></li>
-</ul>
-<p>在<strong>外观</strong>-&gt;<strong>主题编辑器</strong>中找到<code>functions.php</code>，在末尾加上以下代码。</p>
-<p>中文摘要（替换“100”为你想要的长度）：</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">iesay_filter_chinese_excerpt</span>(<span class="params"> <span class="variable">$output</span> </span>) </span>&#123;</span><br><span class="line"><span class="keyword">global</span> <span class="variable">$post</span>;</span><br><span class="line"><span class="comment">//check if its chinese character input</span></span><br><span class="line"><span class="variable">$chinese_output</span> = <span class="title function_ invoke__">preg_match_all</span>(<span class="string">&quot;/\p&#123;Han&#125;+/u&quot;</span>, <span class="variable">$post</span>-&gt;post_content, <span class="variable">$matches</span>);</span><br><span class="line"><span class="keyword">if</span>(<span class="variable">$chinese_output</span>) &#123;</span><br><span class="line"><span class="variable">$output</span> = <span class="title function_ invoke__">mb_substr</span>( <span class="variable">$output</span>, <span class="number">0</span>, <span class="number">100</span> ) . <span class="string">&#x27;...&#x27;</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> <span class="variable">$output</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="title function_ invoke__">add_filter</span>( <span class="string">&#x27;get_the_excerpt&#x27;</span>, <span class="string">&#x27;iesay_filter_chinese_excerpt&#x27;</span> );</span><br></pre></td></tr></table></figure>
-
-<p>英文摘要（替换“50”为你想要的长度）</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">ie_longer_excerpts</span>(<span class="params"> <span class="variable">$length</span> </span>) </span>&#123;</span><br><span class="line">  <span class="comment">// Don&#x27;t change anything inside /wp-admin/</span></span><br><span class="line">  <span class="keyword">if</span> ( <span class="title function_ invoke__">is_admin</span>() ) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="variable">$length</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// Set excerpt length to 50 words</span></span><br><span class="line">  <span class="keyword">return</span> <span class="number">50</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// &quot;999&quot; priority makes this run last of all the functions hooked to this filter, meaning it overrides them</span></span><br><span class="line"><span class="title function_ invoke__">add_filter</span>( <span class="string">&#x27;excerpt_length&#x27;</span>, <span class="string">&#x27;ie_longer_excerpts&#x27;</span>, <span class="number">999</span> );</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>设置文章中所有链接在新窗口中打开</strong></li>
-</ul>
-<p>在<strong>外观</strong>-&gt;<strong>主题编辑器</strong>中找到<code>functions.php</code>，在末尾加上以下代码。</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">autoblank</span>(<span class="params"><span class="variable">$text</span></span>) </span>&#123;</span><br><span class="line">	<span class="variable">$return</span> = <span class="title function_ invoke__">str_replace</span>(<span class="string">&#x27;&lt;a&#x27;</span>, <span class="string">&#x27;&lt;a target=&quot;_blank&quot;&#x27;</span>, <span class="variable">$text</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="variable">$return</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="title function_ invoke__">add_filter</span>(<span class="string">&#x27;the_content&#x27;</span>, <span class="string">&#x27;autoblank&#x27;</span>);</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>域名变更了怎么办？</strong></li>
-</ul>
-<p>有段时间工作很忙疏于维护博客，结果之前申请的域名就到期被收回了，而且紧接着还被人抢注了&#x3D; &#x3D;无奈之下只得更换域名。。</p>
-<p>这种情况直接用新域名访问肯定是不行的，需要在Nginx和Wordpress相应的配置文件中也更改为新的域名。</p>
-<p>需要修改的主要是以下几处：</p>
-<ol>
-<li>Nginx的配置文件，默认路径是<code>/etc/nginx/sites-available/default</code></li>
-</ol>
-<p>如果你像我一样自己创建了另外的网站根目录，则需要修改对应目录下的配置文件。按照前文所述的配置，我需要修改的是<code>/etc/nginx/vhost/vhost_wendicai.conf</code>。</p>
-<p>修改后需重启Nginx服务以生效：<code>service nginx restart</code>。</p>
-<ol start="2">
-<li>Wordpress上的更改可参考<a target="_blank" rel="noopener" href="https://www.liwei8090.com/21909.html" title="这篇博客">这篇博客</a></li>
-</ol>
-<p>我的情况是原域名WordPress管理区域已经无法访问，因此采取了方法2，在<code>/wp-content/themes/your-theme-folder/functions.php</code>文件底部添加以下代码：</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_ invoke__">update_option</span>( <span class="string">&#x27;siteurl&#x27;</span>, <span class="string">&#x27;http://www.wendicai.net&#x27;</span> );</span><br><span class="line"><span class="title function_ invoke__">update_option</span>( <span class="string">&#x27;home&#x27;</span>, <span class="string">&#x27;https://www.wendicai.net&#x27;</span> );</span><br></pre></td></tr></table></figure>
-
-<p>重新访问新URL，确认一切正常后就可以删除这两行代码了。</p>
+<p><a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/enable-net-framework-35-by-using-windows-powershell" title="Installing .Net Framework 3.5 with PowerShell">Installing .Net Framework 3.5 with PowerShell</a></p>
+<p><a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/enable-net-framework-35-by-using-the-add-roles-and-features-wizard" title="Enable .NET Framework 3.5 by using the Add Roles and Features Wizard">Enable .NET Framework 3.5 by using the Add Roles and Features Wizard</a></p>
+<h4 id="Network-Trace"><a href="#Network-Trace" class="headerlink" title="Network Trace"></a>Network Trace</h4><p>If all configurations above are verified, we can use <a target="_blank" rel="noopener" href="https://www.microsoft.com/en-ie/download/details.aspx?id=4865" title="Network Monitor">Network Monitor</a> to capture a network trace and see what causes the failure.</p>
+<p>Pay attention to Kerberos records. If there is Kerberos error, check if SCOM SPN is correct: <a target="_blank" rel="noopener" href="https://kevinholman.com/2011/08/08/opsmgr-2012-what-should-the-spns-look-like/" title="OpsMgr 2012: What should the SPN’s look like?">OpsMgr 2012: What should the SPN’s look like?</a></p>
+<p>Here is an example of Kerberos error in network trace. The error is <strong>KererosV5:KRB_ERROR -KDC_ERR_S_PRINCIPAL_UNKNOWN(7)</strong> and indicates an SPN issue.</p>
+<p><img src="/../images/sco10.jpg"></p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://windyztree.github.io/2019/09/21/wordpress_blog/" data-id="cuidxnpIuZGiPBiuteiNijqIf" data-title="如何用WordPress + Nginx + MySQL + PHP搭建个人博客" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      <a data-url="http://windyztree.github.io/2020/05/10/sco_scom_ip/" data-id="cuidsTYSPMs788erlvROuYUqQ" data-title="SCORCH - SCOM IP – &#34;Failed to connect. Please verify your connection settings.&#34;" class="article-share-link"><span class="fa fa-share">Share</span></a>
       
       
       
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/WordPress/" rel="tag">WordPress</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" rel="tag">云服务器</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8D%9A%E5%AE%A2/" rel="tag">博客</a></li></ul>
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Connection/" rel="tag">Connection</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Integration-Pack/" rel="tag">Integration Pack</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Network/" rel="tag">Network</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SCOM/" rel="tag">SCOM</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SCORCH/" rel="tag">SCORCH</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SPN/" rel="tag">SPN</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-scom_sql_discovery" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/04/29/scom_sql_discovery/" class="article-date">
+  <time class="dt-published" datetime="2020-04-28T16:00:00.000Z" itemprop="datePublished">2020-04-29</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/System-Center-Operations-Manager/">System Center Operations Manager</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2020/04/29/scom_sql_discovery/">SCOM - SQL DB Engine Discovery Mechanism on Cluster</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h3 id="In-summary"><a href="#In-summary" class="headerlink" title="In summary"></a>In summary</h3><ul>
+<li><p>For any SQL DB Engine on cluster to be discovered, firstly ensure the <strong>SQL Server Network Name</strong> is already discovered in “Agentless Managed”.</p>
+</li>
+<li><p>If not, check if there is any <strong>orphaned resource</strong> in Windows Cluster.</p>
+</li>
+</ul>
+<h3 id="Details"><a href="#Details" class="headerlink" title="Details"></a>Details</h3><p>For SQL DB Engine on Cluster, the discovery is expected to run on 3 objects.</p>
+<ul>
+<li>SQL Server Network Name (You can find the name in <strong>Failover Cluster Manager</strong> -&gt; <em>Cluster Name</em> -&gt; <strong>Roles</strong> -&gt; <strong>Server Name</strong>)</li>
+<li>Cluster Name (The cluster name in <strong>Failover Cluster Manager</strong>)</li>
+<li>Server Name of the Node</li>
+</ul>
+<p><img src="/../images/scom7.jpg"></p>
+<p>Only the execution on <strong>SQL Server Network Name</strong> returns instances on it. Execution on the other 2 objects will show successful, but won’t return any discovered instance. That’s expected.</p>
+<p><strong>In SCOM ETL Trace:</strong></p>
+<p>Execution on 2012CL (SQL Server Network Name):</p>
+<blockquote>
+<p>[1]24232.8364::12&#x2F;26&#x2F;2019-18:52:44.977 [ExecutionManager] [] [Information] :CTaskTracker::TaskCompleted{tasktracker_cpp1514}Notifying creator of task completion for task 6446, completion reason 0x0, task result is SUCCESS, task output is <DataItem type="System.DiscoveryData" time="2019-12-27T02:52:45.3080007Z" sourceHealthServiceId="d372b2e3-41af-7466-fcfa-e5e97c716492"><DiscoveryType>0</DiscoveryType><DiscoverySourceType>0</DiscoverySourceType><DiscoverySourceObjectId>{bb187d3c-1218-6f43-b6f6-0a0695b96bd7}</DiscoverySourceObjectId><font color=#ff7f50><strong><DiscoverySourceManagedEntity>{e12d4b62-8f91-0b5e-e583-47789cae70dc}</DiscoverySourceManagedEntity></strong></font><br><font color=#009900><strong><ClassInstances></strong></font><br><ClassInstance TypeId="{737b3f9e-b13b-f42a-a7b8-47c625b3cbf0}"><Settings><Setting><Name>MachineName</Name><Value>2012CL.sqlrepro.edu</Value></Setting><Setting><Name>InstanceName</Name><Value>SQL2012AG</Value></Setting><Setting><Name>DisplayName</Name><Value>Resource Pool Group</Value></Setting></Settings></ClassInstance><br><ClassInstance TypeId="{258f9e75-fb47-c6fc-c45b-75df9ca3a53e}"><Settings><Setting><Name>PrincipalName</Name><Value>2012CL.sqlrepro.edu</Value></Setting><Setting><Name>MachineName</Name><Value>2012CL.sqlrepro.edu</Value></Setting><Setting><Name>InstanceName</Name><Value>SQL2012AG</Value></Setting></Settings></ClassInstance><br><ClassInstance TypeId="{01c7eaa4-aaa0-28a2-55ec-af08fb1b7f9d}"><Settings><Setting><Name>MachineName</Name><Value>2012CL.sqlrepro.edu</Value></Setting><Setting><Name>NetbiosComputerName</Name><Value>2012CL</Value></Setting><Setting><Name>NetbiosDomainName</Name><Value>SQLREPRO</Value></Setting><Setting><Name>InstanceName</Name><Value>SQL2012AG</Value></Setting><Setting><Name>DisplayName</Name><Value>2012CL\SQL2012AG</Value></Setting><Setting><Name>ConnectionString</Name><Value>2012CL.sqlrepro.edu\SQL2012AG</Value></Setting><Setting><Name>Edition</Name><Value>Enterprise Edition</Value></Setting><Setting><Name>InstanceID</Name><Value>MSSQL11.SQL2012AG</Value></Setting><Setting><Name>Language</Name><Value>1033</Value></Setting><Setting><Name>Version</Name><Value>11.0.2100.60</Value></Setting><Setting><Name>ServiceName</Name><Value>MSSQL$SQL2012AG</Value></Setting><Setting><Name>ServiceClusterName</Name><Value>SQL SERVER (SQL2012AG)</Value></Setting><Setting><Name>Cluster</Name><Value>True</Value></Setting><Setting><Name>PerformanceCounterObject</Name><Value>MSSQL$SQL2012AG</Value></Setting><Setting><Name>AuthenticationMode</Name><Value>Windows Authentication Mode</Value></Setting><Setting><Name>FullTextSearchServiceName</Name><Value>MSSQLFDLauncher$SQL2012AG</Value></Setting><Setting><Name>FullTextSearchServiceClusterName</Name><Value>SQL Full-text Filter Daemon Launcher (SQL2012AG)</Value></Setting><Setting><Name>AgentName</Name><Value>SQLAgent$SQL2012AG</Value></Setting><Setting><Name>Type</Name><Value>DB Engine</Value></Setting><Setting><Name>AgentClusterName</Name><Value>SQL SERVER AGENT (SQL2012AG)</Value></Setting><Setting><Name>MasterDatabaseLocation</Name><Value>T:\MSSQL11.SQL2012AG\MSSQL\DATA\master.mdf</Value></Setting><Setting><Name>MasterDatabaseLogLocation</Name><Value>T:\MSSQL11.SQL2012AG\MSSQL\DATA\mastlog.ldf</Value></Setting><Setting><Name>ErrorLogLocation</Name><Value>T:\MSSQL11.SQL2012AG\MSSQL\Log\ERRORLOG</Value></Setting><Setting><Name>ServicePackVersion</Name><Value>0</Value></Setting><Setting><Name>AuditLevel</Name><Value>Failure</Value></Setting><Setting><Name>InstallPath</Name><Value>C:\Program Files\Microsoft SQL Server\MSSQL11.SQL2012AG\MSSQL</Value></Setting><Setting><Name>ToolsPath</Name><Value>C:\Program Files\Microsoft SQL Server\110\Tools</Value></Setting><Setting><Name>EnableErrorReporting</Name><Value>False</Value></Setting><Setting><Name>Account</Name><Value>sqlrepro\sqlsvc</Value></Setting><Setting><Name>PrincipalName</Name><Value>2012CL.sqlrepro.edu</Value></Setting><Setting><Name>MonitoringType</Name><Value>Local</Value></Setting></Settings></ClassInstance><br><font color=#009900><strong></ClassInstances></strong></font><br><font color=#009900><strong><RelationshipInstances></strong></font><br><RelationshipInstance TypeId="{5446657d-ac22-0a78-dfb2-36150b58d67d}" SourceTypeId="{c247cbe5-34b2-abf4-8d68-884d4a47cf8b}" TargetTypeId="{01c7eaa4-aaa0-28a2-55ec-af08fb1b7f9d}"><Settings /><SourceRole><Settings /></SourceRole><TargetRole><Settings><Setting><Name>MachineName</Name><Value>2012CL.sqlrepro.edu</Value></Setting><Setting><Name>InstanceName</Name><Value>SQL2012AG</Value></Setting></Settings></TargetRole></RelationshipInstance><br><RelationshipInstance TypeId="{f8c488fb-9ff6-5148-29cb-5b3a9cafce01}" SourceTypeId="{f3a9b2cb-ccdb-3896-045c-fc8749039e7f}" TargetTypeId="{ea99500d-8d52-fc52-b5a5-10dcd1e9d2bd}"><Settings /><SourceRole><Settings /></SourceRole><TargetRole><Settings><Setting><Name>PrincipalName</Name><Value>2012CL.sqlrepro.edu</Value></Setting></Settings></TargetRole></RelationshipInstance><br><RelationshipInstance TypeId="{1e8df0aa-fc37-ace6-cf38-333c67ef4f50}" SourceTypeId="{e817d034-02e8-294c-3509-01ca25481689}" TargetTypeId="{01c7eaa4-aaa0-28a2-55ec-af08fb1b7f9d}"><Settings /><SourceRole><Settings><Setting><Name>PrincipalName</Name><Value>2012CL.sqlrepro.edu</Value></Setting></Settings></SourceRole><TargetRole><Settings><Setting><Name>MachineName</Name><Value>2012CL.sqlrepro.edu</Value></Setting><Setting><Name>InstanceName</Name><Value>SQL2012AG</Value></Setting></Settings></TargetRole></RelationshipInstance><br><font color=#009900><strong></RelationshipInstances></strong></font><br></DataItem>.</p>
+</blockquote>
+<p>Execution on Cluster2016 (Cluster Name):</p>
+<blockquote>
+<p>[3]24232.8364::12&#x2F;26&#x2F;2019-18:53:05.985 [ExecutionManager] [] [Information] :CTaskTracker::TaskCompleted{tasktracker_cpp1514}Notifying creator of task completion for task 6448, completion reason 0x0, task result is SUCCESS, task output is <DataItem type="System.DiscoveryData" time="2019-12-27T02:53:06.3158795Z" sourceHealthServiceId="d372b2e3-41af-7466-fcfa-e5e97c716492"><DiscoveryType>0</DiscoveryType><DiscoverySourceType>0</DiscoverySourceType><DiscoverySourceObjectId>{bb187d3c-1218-6f43-b6f6-0a0695b96bd7}</DiscoverySourceObjectId><font color=#ff7f50><strong><DiscoverySourceManagedEntity>{124369dd-8822-2f6b-9ce7-9a1b06551b24}</DiscoverySourceManagedEntity></strong></font><br><font color=#009900><strong><ClassInstances /></strong> # No SQL instance is returned here<br><strong><RelationshipInstances /></strong></font><br></DataItem>.</p>
+</blockquote>
+<p>Execution on Node4 (Server Name of the Node):</p>
+<blockquote>
+<p>[1]24232.10072::12&#x2F;26&#x2F;2019-18:51:54.710 [ExecutionManager] [] [Information] :CTaskTracker::TaskCompleted{tasktracker_cpp1514}Notifying creator of task completion for task 6441, completion reason 0x0, task result is SUCCESS, task output is <DataItem type="System.DiscoveryData" time="2019-12-27T02:51:55.0411614Z" sourceHealthServiceId="d372b2e3-41af-7466-fcfa-e5e97c716492"><DiscoveryType>0</DiscoveryType><DiscoverySourceType>0</DiscoverySourceType><DiscoverySourceObjectId>{bb187d3c-1218-6f43-b6f6-0a0695b96bd7}</DiscoverySourceObjectId><font color=#ff7f50><strong><DiscoverySourceManagedEntity>{264b2a65-07f0-8cce-8757-b309a2bc20b8}</DiscoverySourceManagedEntity></strong></font><br><font color=#009900><strong><ClassInstances /></strong> # No SQL instance is returned here<br><strong><RelationshipInstances /></strong></font><br></DataItem>.</p>
+</blockquote>
+<p>The 3 GUIDs in the trace are the BME IDs of the 3 objects:<br><img src="/../images/scom8.jpg"></p>
+<p>If you check SCOM trace and find the discovery didn’t run on SQL Server Network Name, the first thing is to check whether the discovery target is already discovered in <strong>SCOM Console</strong> -&gt; <strong>Monitoring</strong> -&gt; <strong>Discovered Inventory</strong> -&gt; <em><Target class of the discovery></em>. An object with the <strong>SQL Server Network Name</strong> is probably missing there.</p>
+<ul>
+<li>Tracing the discovery chain to the source, if the SQL Server Network Name is already discovered and shows up in Agentless Managed, we need to troubleshoot the SQL discovery itself.</li>
+<li>Otherwise, if the SQL Server Network Name doesn’t show up in Agentless Managed, the issue is actually a Windows Cluster discovery issue.</li>
+</ul>
+<p>For the Windows Cluster discovery issue, I followed below steps to resolve it.</p>
+<ol>
+<li><p><strong>[VERY IMPORTANT]</strong> Confirm agent proxy is enabled on the agents.</p>
+</li>
+<li><p>Check if the cluster has any orphaned resource blocking the cluster discovery.</p>
+<p> a. Run this PowerShell command to check if there is any offline resources that had been removed from cluster manager.</p>
+ <figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">get-clusterresource</span> | <span class="built_in">where</span> &#123;<span class="variable">$_</span>.state <span class="operator">-eq</span> <span class="string">&#x27;offline&#x27;</span>&#125;</span><br></pre></td></tr></table></figure>
+<p> b. Run this PowerShell command. Compare the result with the resources in Failover Cluster Manager to find out if there is any orphaned resource.</p>
+ <figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">get-clusterresource</span> | <span class="built_in">sort-object</span> <span class="literal">-Property</span> ResourceType</span><br></pre></td></tr></table></figure>
+<p> All the resources returned by the command should be found in below areas in Failover Cluster Manager. Otherwise, there is an orphaned resource.</p>
+<p> <img src="/../images/scom9.jpg"></p>
+<p> <img src="/../images/scom10.jpg"></p>
+<p> If any orphaned resource is found, use this command to remove the resource.</p>
+ <figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">Remove-ClusterResource</span> <span class="literal">-Name</span> <span class="string">&quot;&lt;Name of the resource&gt;&quot;</span> <span class="literal">-Force</span></span><br></pre></td></tr></table></figure>
+
+<p> After that, flush health service cache on the node and monitor for some time. If it goes well, the SQL Server Network Name and the Cluster Name Object should occur in <strong>Agentless Managed</strong>, then the SQL DB engines should be discovered gradually.</p>
+</li>
+</ol>
+<h3 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h3><p><a target="_blank" rel="noopener" href="https://blog.coeo.com/karlgrambow/2014/10/20/scom-wont-discover-my-sql-server-or-cluster" title="SCOM Won&#39;t Discover My SQL Server (Or Cluster) ">SCOM Won’t Discover My SQL Server (Or Cluster) </a></p>
+<p><a target="_blank" rel="noopener" href="https://social.technet.microsoft.com/Forums/en-US/5d60cc62-d5d9-4077-b051-092cfdedbe43/cluster-not-appearing-in-agentless-managed?forum=operationsmanagergeneral" title="Cluster not appearing in Agentless Managed">Cluster not appearing in Agentless Managed</a></p>
+<p><a target="_blank" rel="noopener" href="https://blog.tyang.org/2014/03/29/discovery-ms-clusters-kind/" title="Discovery for MS Clusters of Any Kind">Discovery for MS Clusters of Any Kind</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://windyztree.github.io/2020/04/29/scom_sql_discovery/" data-id="cuidcyhKSEZcdBF0D7mQXHCbL" data-title="SCOM - SQL DB Engine Discovery Mechanism on Cluster" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Cluster/" rel="tag">Cluster</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SCOM/" rel="tag">SCOM</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SQL-Discovery/" rel="tag">SQL Discovery</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-sco_web_fail" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/11/24/sco_web_fail/" class="article-date">
+  <time class="dt-published" datetime="2019-11-23T16:00:00.000Z" itemprop="datePublished">2019-11-24</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/System-Center-Orchestrator/">System Center Orchestrator</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/11/24/sco_web_fail/">Fail to connect to Orchestrator Web Service</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h3 id="Error-Message"><a href="#Error-Message" class="headerlink" title="Error Message"></a>Error Message</h3><p>The same error may occur after applying SCORCH 2016 UR4 and later versions. See <a target="_blank" rel="noopener" href="http://www.wendicai.net/?p=42">Tips and Tricks for Applying SCORCH 2016 UR4 and Later Versions</a>.</p>
+<blockquote>
+<p>Request Error</p>
+<p>The server encountered an error processing the request. The exception message is <font color=#ff7f50><strong>‘An error occurred while executing the command definition. See the inner exception for details.’</strong></font>. See Server logs for more details. The exception stack trace is:</p>
+<p>at System.Data.EntityClient.EntityCommandDefinition.ExecuteStoreCommands(EntityCommand entityCommand, CommandBehavior behavior)<br>at System.Data.EntityClient.EntityCommandDefinition.Execute(EntityCommand entityCommand, CommandBehavior behavior)<br>at System.Data.EntityClient.EntityCommand.ExecuteReader(CommandBehavior behavior)<br>at System.Da.EntityCIient.EntityCommand.ExecuteScalar[T_Result](Func`2 resultSelector)<br>at System.Data.Objects.ObjectContext.ExecuteFunction(String functionName, ObjectParameter[] parameters)<br>at Microsoft.SystemCenter.Orchestrator.WebService.OrchestratorContext.ComputeAuthorizationCache(NuIlable`1 tokenld)<br>at Microsoft.SystemCenter.Orchestrator.WebService.OrchestratorContext.OnContextCreated()<br>at invoke_constructor()<br>at System.Data.Services.DataService`1.CreateProvider()<br>at System.Data.Services.DataService`1.HandleRequest()<br>at System.Data.Services.DataService`1.ProcessRequestForMessage(Stream messageBody)<br>at SynclnvokeProcessRequestForMessage(Object, Object[], Object[])<br>at System.ServiceModel.Dispatcher.SyncMethodInvoker.Invoke(Object instance, Object[] inputs, Object[]&amp; outputs)<br>at System.ServiceModel.Dispatcher.DispatchOperationRuntime.InvokeBegin(MessageRpc&amp; rpt)<br>at System.ServiceModel.Dispatcher.ImmutableDispatchRuntime.ProcessMessage5(MessageRpc&amp; rpc)<br>at System.ServiceModel.Dispatcher.ImmutableDispatchRuntime.ProcessMessage31(MessageRpc&amp; rpc)<br>at System.ServiceModel.Dispatcher.MessageRpC.Process(Boolean isOperationContextSet)at System.ServiceModel.Dispatcher.MessageRpC.Process(Boolean isOperationContextSet)</p>
+</blockquote>
+<h3 id="Troubleshooting"><a href="#Troubleshooting" class="headerlink" title="Troubleshooting"></a>Troubleshooting</h3><p>This error usually indicates some issues in the Orchestrator DB.</p>
+<ol>
+<li>Ensure Orchestrator DB disk space is enough.</li>
+<li>Run below queries on Orchestrator DB to ensure enough permission, and try again.</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GRANT</span> <span class="keyword">EXECUTE</span> <span class="keyword">ON</span> object::[Microsoft.SystemCenter.Orchestrator].[GetSecurityToken] <span class="keyword">TO</span> [Microsoft.SystemCenter.Orchestrator.Operators]</span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">SELECT</span> <span class="keyword">ON</span> object::[Microsoft.SystemCenter.Orchestrator.Internal].[Settings] <span class="keyword">TO</span> [Microsoft.SystemCenter.Orchestrator.Operators]</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>Check whether the service <strong><a target="_blank" rel="noopener" href="http://schemas.microsoft.com/SystemCenter/Orchestrator/Maintenance/MaintenanceService">http://schemas.microsoft.com/SystemCenter/Orchestrator/Maintenance/MaintenanceService</a></strong> and queue <strong>[Microsoft.SystemCenter.Orchestrator.Maintenance].[MaintenanceServiceQueue]</strong> are there in Orchestrator DB. If they are missing, we need to create them manually.</li>
+</ol>
+<p><img src="/../images/sco9.png"></p>
+<ol start="4">
+<li>If the issue only occurred recently and we have a backup of the Orchestrator DB prior to this issue, we can restore the backup as a quick solution.</li>
+</ol>
+<h4 id="Log-Analysis"><a href="#Log-Analysis" class="headerlink" title="Log Analysis"></a>Log Analysis</h4><p>Use <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/sysinternals/downloads/procdump" title="procdump">procdump</a> to display the exception.</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Procdump <span class="literal">-e</span> <span class="number">1</span> <span class="operator">-f</span> <span class="string">&quot;&quot;</span> &lt;PID of w3wp.exe&gt;</span><br></pre></td></tr></table></figure>
+
+<p>Below is an example output.</p>
+<blockquote>
+<p>[00:28:10] Exception: E0434F4D.System.Configuration.ConfigurationErrorsException (“This element is not currently associated with any context”)<br>[00:28:10] Exception: E0434F4D.System.Data.SqlClient.SqlException (“The SELECT permission was denied on the object ‘Settings’, database ‘Orchestrator’, schema ‘Microsoft.SystemCenter.Orchestrator.Internal’.”)<br>[00:28:10] Exception: E0434F4D.System.Data.SqlClient.SqlException (“The SELECT permission was denied on the object ‘Settings’, database ‘Orchestrator’, schema ‘Microsoft.SystemCenter.Orchestrator.Internal’.”)<br>[00:28:10] Exception: E0434F4D.System.Data.SqlClient.SqlException (<font color=#ff7f50><strong>“The SELECT permission was denied on the object ‘Settings’, database ‘Orchestrator’, schema ‘Microsoft.SystemCenter.Orchestrator.Internal’.”</strong></font>)<br>[00:28:10] Exception: E0434F4D.System.Data.SqlClient.SqlException (“The SELECT permission was denied on the object ‘Settings’, database ‘Orchestrator’, schema ‘Microsoft.SystemCenter.Orchestrator.Internal’.”)<br>[00:28:10] Exception: E0434F4D.System.Data.SqlClient.SqlException (“The EXECUTE permission was denied on the object ‘GetSecurityToken’, database ‘Orchestrator’, schema ‘Microsoft.SystemCenter.Orchestrator’.”)<br>[00:28:10] Exception: E0434F4D.System.Data.SqlClient.SqlException (“The EXECUTE permission was denied on the object ‘GetSecurityToken’, database ‘Orchestrator’, schema ‘Microsoft.SystemCenter.Orchestrator’.”)<br>[00:28:10] Exception: E0434F4D.System.Data.SqlClient.SqlException (<font color=#ff7f50><strong>“The EXECUTE permission was denied on the object ‘GetSecurityToken’, database ‘Orchestrator’, schema ‘Microsoft.SystemCenter.Orchestrator’.”</strong></font>)<br>[00:28:10] Exception: E0434F4D.System.Data.SqlClient.SqlException (“The EXECUTE permission was denied on the object ‘GetSecurityToken’, database ‘Orchestrator’, schema ‘Microsoft.SystemCenter.Orchestrator’.”)<br>[00:28:10] Exception: E0434F4D.System.Data.EntityCommandExecutionException (<font color=#1F9F3E><strong>“An error occurred while executing the command definition. See the inner exception for details.”</strong></font>)<br>[00:28:10] Exception: E0434F4D.System.Data.EntityCommandExecutionException (“An error occurred while executing the command definition. See the inner exception for details.”)<br>[00:28:10] Exception: E0434F4D.System.Data.EntityCommandExecutionException (“An error occurred while executing the command definition. See the inner exception for details.”)<br>[00:28:10] Exception: E0434F4D.System.Data.EntityCommandExecutionException (“An error occurred while executing the command definition. See the inner exception for details.”)<br>[00:28:10] Exception: E0434F4D.System.Data.EntityCommandExecutionException (“An error occurred while executing the command definition. See the inner exception for details.”)</p>
+</blockquote>
+<p>In this example, the solution will be as shown in <strong>Troubleshooting - 2</strong>.</p>
+<h3 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h3><p><a target="_blank" rel="noopener" href="https://sc-orchestrator.vasol.eu/request-error-while-opening-orchestrator-web-services/" title="Request Error – while Opening Orchestrator Web Services">Request Error – while Opening Orchestrator Web Services</a></p>
+<p><a target="_blank" rel="noopener" href="https://support.microsoft.com/en-us/help/2919041/the-orchestration-console-cannot-be-opened-after-upgrading-to-system-c" title="The Orchestration Console cannot be opened after upgrading to System Center 2012 R2">The Orchestration Console cannot be opened after upgrading to System Center 2012 R2</a></p>
+<p><a target="_blank" rel="noopener" href="https://blogs.technet.microsoft.com/silvana/2016/08/11/orchestrator-orchestration-console-and-web-service-are-not-working-anymore/" title="[Orchestrator] Orchestration Console and Web Service are not working anymore">[Orchestrator] Orchestration Console and Web Service are not working anymore</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://windyztree.github.io/2019/11/24/sco_web_fail/" data-id="cuid24mZ_SVfxbx7Vs0Q96BFz" data-title="Fail to connect to Orchestrator Web Service" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Connection/" rel="tag">Connection</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SCORCH/" rel="tag">SCORCH</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Web-Service/" rel="tag">Web Service</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-scom_web_console" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/11/16/scom_web_console/" class="article-date">
+  <time class="dt-published" datetime="2019-11-15T16:00:00.000Z" itemprop="datePublished">2019-11-16</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/System-Center-Operations-Manager/">System Center Operations Manager</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/11/16/scom_web_console/">SCOM Web Console – &#34;Web Console Configuration Required&#34;</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>When opening SCOM Web Console, you may get the notification <font color=#ff7f50><em>“Web Console Configuration Required”</em>.</font><br><img src="/../images/scom6.png"></p>
+<p>Normally you can click the <strong>Configure</strong> button (with SCOM Admin permission) and run the executable and refresh the browser window and you should see a web console login page next.</p>
+<p>If you have run <strong>SilverlightClientConfiguration.exe</strong> but the problem still persists, you may want to continue with this article.</p>
+<h3 id="How-to-resolve-the-notification"><a href="#How-to-resolve-the-notification" class="headerlink" title="How to resolve the notification?"></a>How to resolve the notification?</h3><p>To find the way to resolve the notification, first we need to understand what <strong>SilverlightClientConfiguration.exe</strong> acutally does.</p>
+<p><strong>SilverlightClientConfiguration.exe</strong> actually does two things:</p>
+<ol>
+<li>Import the certificate to the store “Trusted Publishers”.</li>
+<li>Add the registry.</li>
+</ol>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">Path: HKLM\SOFTWARE\Wow6432Node\Microsoft\Silverlight</span><br><span class="line">Value Type: Reg_DWORD</span><br><span class="line">Key: AllowElevatedTrustAppsInBrowser</span><br><span class="line">Value: 1</span><br></pre></td></tr></table></figure>
+
+<p>Now we know the story behind, we can do the same manually if the executable doesn’t work.</p>
+<p>For more details, please refer to the article <a target="_blank" rel="noopener" href="https://www.scom2k7.com/scom-2012-web-console-configuration-no-longer-required/">SCOM 2012 Web Console Configuration “NO LONGER Required!”</a>.</p>
+<h3 id="It-is-a-knonw-issue-in-SCOM-2012-R2-UR12-and-UR13"><a href="#It-is-a-knonw-issue-in-SCOM-2012-R2-UR12-and-UR13" class="headerlink" title="It is a knonw issue in SCOM 2012 R2 UR12 and UR13"></a>It is a knonw issue in SCOM 2012 R2 UR12 and UR13</h3><p>We have a known issue in SCOM 2012 R2 UR13 and UR14 that the dialogue will occur again after clicking <strong>Configure</strong>. In the two versions, <strong>SilverlightClientConfiguration.exe</strong> doesn’t import the certificate successfully.</p>
+<h4 id="Workaround"><a href="#Workaround" class="headerlink" title="Workaround"></a>Workaround</h4><p>There is a workaround to resolve the issue. That must be applied to every machine where you want to open web console. The steps are actually a manual implementation of <strong>SilverlightClientConfiguration.exe</strong>.</p>
+<ol>
+<li>Click <strong>Configure</strong> in the dialog box.</li>
+<li>When you are prompted to run or save the <strong>SilverlightClientConfiguration.exe</strong> file, click <strong>Save</strong>.</li>
+<li>If you never ran <strong>SilverlightClientConfiguration.exe</strong> on the machine before, run it.</li>
+<li>Right-click the <strong>.exe</strong> file, click <strong>Properties</strong>, and then select the <strong>Digital Signatures</strong> tab.</li>
+<li>Select the certificate that has <strong>Digest Algorithm</strong> as <strong>SHA256</strong>, and then click <strong>Details</strong>.</li>
+<li>In the <strong>Digital Signature Details</strong> dialog box, click <strong>View Certificate</strong>.</li>
+<li>In the dialog box that appears, click <strong>Install Certificate</strong>.</li>
+<li>In the <strong>Certificate Import Wizard</strong>, change the store location to <strong>Local Machine</strong>, and then click <strong>Next</strong>.</li>
+<li>Select the <strong>Place all certificates in the following store</strong> option and then select <strong>Trusted Publishers</strong>.</li>
+<li>Click <strong>Next</strong> and then click <strong>Finish</strong>.</li>
+<li>Refresh your browser window.</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://windyztree.github.io/2019/11/16/scom_web_console/" data-id="cuidiRf9cYoFhHk5oA0DbwnJv" data-title="SCOM Web Console – &#34;Web Console Configuration Required&#34;" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SCOM/" rel="tag">SCOM</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Web-Console/" rel="tag">Web Console</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-sco_web" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/11/11/sco_web/" class="article-date">
+  <time class="dt-published" datetime="2019-11-10T16:00:00.000Z" itemprop="datePublished">2019-11-11</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/System-Center-Orchestrator/">System Center Orchestrator</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/11/11/sco_web/">SCORCH Web Service API</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h3 id="Web-Service-URLs"><a href="#Web-Service-URLs" class="headerlink" title="Web Service URLs"></a>Web Service URLs</h3><p><strong>Web Service URL</strong> (no change for 2016):</p>
+<p><code>http://sco01:81/orchestrator2012/orchestrator.svc/</code> </p>
+<p><strong>Web Console URL</strong>:</p>
+<p><code>http://sco01:82/</code></p>
+<p><strong>Get runbooks</strong>:</p>
+<p><code>http://server01.contoso.com:81/Orchestrator2012/Orchestrator.svc/Runbooks</code></p>
+<h3 id="Access-Orchestrator-Runbooks-via-Web-Service"><a href="#Access-Orchestrator-Runbooks-via-Web-Service" class="headerlink" title="Access Orchestrator Runbooks via Web Service"></a>Access Orchestrator Runbooks via Web Service</h3><h4 id="Get-a-Runbook"><a href="#Get-a-Runbook" class="headerlink" title="Get a Runbook"></a>Get a Runbook</h4><h5 id="PowerShell"><a href="#PowerShell" class="headerlink" title="PowerShell"></a>PowerShell</h5><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$secpasswd</span> = <span class="built_in">ConvertTo-SecureString</span> <span class="string">&quot;Password01!&quot;</span> <span class="literal">-AsPlainText</span> <span class="literal">-Force</span></span><br><span class="line"><span class="variable">$mycreds</span> = <span class="built_in">New-Object</span> System.Management.Automation.PSCredential(<span class="string">&quot;contoso\Administrator&quot;</span>, <span class="variable">$secpasswd</span>)</span><br><span class="line"><span class="variable">$OrchURI</span> = <span class="string">&quot;http://SCO01:81/Orchestrator2012/Orchestrator.svc/Runbooks?`$filter=Name eq &#x27;Test&#x27;&quot;</span></span><br><span class="line"><span class="variable">$ResponseObject</span> = <span class="built_in">invoke-webrequest</span> <span class="literal">-Uri</span> <span class="variable">$OrchURI</span> <span class="literal">-method</span> Get <span class="literal">-Credential</span> <span class="variable">$mycreds</span></span><br><span class="line"><span class="variable">$ResponseObject</span>.Content</span><br></pre></td></tr></table></figure>
+
+<p><img src="/../images/sco2.png"></p>
+<h5 id="Postman"><a href="#Postman" class="headerlink" title="Postman"></a>Postman</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://SCO01:81/Orchestrator2012/Orchestrator.svc/Runbooks?$filter=Name eq &#x27;Test&#x27;&quot;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/../images/sco3.png"></p>
+<h4 id="Start-a-Runbook"><a href="#Start-a-Runbook" class="headerlink" title="Start a Runbook"></a>Start a Runbook</h4><h5 id="PowerShell-1"><a href="#PowerShell-1" class="headerlink" title="PowerShell"></a>PowerShell</h5><figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$OrchURI</span> = <span class="string">&quot;http://SCO01:81/Orchestrator2012/Orchestrator.svc/Jobs/&quot;</span></span><br><span class="line"> </span><br><span class="line"><span class="variable">$POSTBody</span> = <span class="string">@&quot;</span></span><br><span class="line"><span class="string">&lt;?xml version=&quot;1.0&quot; encoding=&quot;utf-8&quot; standalone=&quot;yes&quot;?&gt;</span></span><br><span class="line"><span class="string">&lt;entry xmlns:d=&quot;http://schemas.microsoft.com/ado/2007/08/dataservices&quot; xmlns:m=&quot;http://schemas.microsoft.com/ado/2007/08/dataservices/metadata&quot; xmlns=&quot;http://www.w3.org/2005/Atom&quot;&gt;</span></span><br><span class="line"><span class="string">&lt;content type=&quot;application/xml&quot;&gt;</span></span><br><span class="line"><span class="string">&lt;m:properties&gt;</span></span><br><span class="line"><span class="string">&lt;d:RunbookId type=&quot;Edm.Guid&quot;&gt;87be7221-2a15-4e41-91f6-35f4d3006d53&lt;/d:RunbookId&gt;</span></span><br><span class="line"><span class="string">&lt;d:Parameters&gt;&lt;/d:Parameters&gt;</span></span><br><span class="line"><span class="string">&lt;/m:properties&gt;</span></span><br><span class="line"><span class="string">&lt;/content&gt;</span></span><br><span class="line"><span class="string">&lt;/entry&gt;</span></span><br><span class="line"><span class="string">&quot;@</span></span><br><span class="line"> </span><br><span class="line"><span class="variable">$ResponseObject</span> = <span class="built_in">invoke-webrequest</span> <span class="literal">-Uri</span> <span class="variable">$OrchURI</span> <span class="literal">-method</span> POST <span class="literal">-Credential</span> <span class="variable">$mycreds</span> <span class="literal">-Body</span> <span class="variable">$POSTBody</span> <span class="literal">-ContentType</span> <span class="string">&quot;application/atom+xml&quot;</span></span><br><span class="line"><span class="variable">$ResponseObject</span>.Content</span><br></pre></td></tr></table></figure>
+
+<p><img src="/../images/sco4.png"></p>
+<h5 id="Postman-1"><a href="#Postman-1" class="headerlink" title="Postman"></a>Postman</h5><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://SCO01:81/Orchestrator2012/Orchestrator.svc/Jobs</span><br></pre></td></tr></table></figure>
+
+<p><img src="/../images/sco5.png"></p>
+<p><img src="/../images/sco6.png"></p>
+<p><img src="/../images/sco7.png"></p>
+<p>Confirm the runbook enters running status:</p>
+<p><img src="/../images/sco8.png"></p>
+<h3 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h3><p><a target="_blank" rel="noopener" href="https://techcommunity.microsoft.com/t5/System-Center-Blog/Accessing-System-Center-2012-Orchestrator-Using-the-Web-Service/ba-p/345014" title="Accessing System Center 2012 Orchestrator Using the Web Service">Accessing System Center 2012 Orchestrator Using the Web Service</a></p>
+<p><a target="_blank" rel="noopener" href="https://techcommunity.microsoft.com/t5/System-Center-Blog/Starting-Runbooks-and-Stopping-Jobs-Using-the-System-Center-2012/ba-p/345024" title="Starting Runbooks and Stopping Jobs Using the System Center 2012 Orchestrator Web Service">Starting Runbooks and Stopping Jobs Using the System Center 2012 Orchestrator Web Service</a></p>
+<p><a target="_blank" rel="noopener" href="http://www.laurierhodes.info/?q=node/101" title="Calling Orchestrator Runbooks (&amp; retrieving output) via REST">Calling Orchestrator Runbooks (&amp; retrieving output) via REST</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://windyztree.github.io/2019/11/11/sco_web/" data-id="cuidjMNitzt8mdWAqZlyEA0BG" data-title="SCORCH Web Service API" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Postman/" rel="tag">Postman</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Rest-API/" rel="tag">Rest API</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SCORCH/" rel="tag">SCORCH</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Web-Service/" rel="tag">Web Service</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-scom_gw_dmz" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/11/07/scom_gw_dmz/" class="article-date">
+  <time class="dt-published" datetime="2019-11-06T16:00:00.000Z" itemprop="datePublished">2019-11-07</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/System-Center-Operations-Manager/">System Center Operations Manager</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/11/07/scom_gw_dmz/">Troubleshooting Gateway or Workgroup Communication Issue in SCOM</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p>If you have deployed SCOM Gateway in your environment, or SCOM agent on a workgroup machine, but they can’t communicate with management server, you can refer to the following steps for troubleshooting.</p>
+<p>Based on my experience, these troubleshooting steps can help resolve &gt;50% of Gateway&#x2F;Workgroup communication issues.</p>
+<h3 id="Troubleshooting-Steps"><a href="#Troubleshooting-Steps" class="headerlink" title="Troubleshooting Steps"></a>Troubleshooting Steps</h3><ul>
+<li><p>Make sure <strong>Microsoft Monitoring Agent</strong> service is running, and Startup type is set to <strong>Automatic</strong> on management server and gateway&#x2F;workgroup.</p>
+</li>
+<li><p>Check the gateway&#x2F;workgroup status in SCOM console.</p>
+</li>
+<li><p><strong>Check Operations Manager event log</strong></p>
+<p>  If the certificate is recreated, we should find Event ID 20053 in Operations Manager event log on both the management server and gateway server&#x2F;workgroup, indicating the certificate was loaded successfully.</p>
+</li>
+</ul>
+<p><img src="/../images/scom1.png"></p>
+<pre><code>If you find a related warning or error in event log, refer to this blog for explanation: [Troubleshoot workgroup/gateway issue with event log](https://techcommunity.microsoft.com/t5/System-Center-Blog/Monitoring-OpsMgr-workgroup-clients-Part-2-Installing/ba-p/350806)
+</code></pre>
+<ul>
+<li><p><strong>Ensure port 5723 is open</strong></p>
+<p>  On gateway&#x2F;workgroup:</p>
+  <figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">telnet &lt;Management Server FQDN&gt; <span class="number">5723</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p><strong>DNS</strong></p>
+<p>  Make sure that both sides are reachable via hostname (just ping). If it’s not working add the computers in DNS or in the <strong>Host</strong> file (<strong>C:\Windows\System32\Drivers\ETC\Host</strong>).</p>
+</li>
+<li><p><strong>Check certificate</strong></p>
+<p>  Computer Certificate:</p>
+<ol>
+<li>Go to both management server and gateway server&#x2F;workgroup, navigate to <strong>HKLM\Software\Microsoft\Microsoft Operations Manager\3.0\Machine Settings</strong> and check the value of <strong>ChannelCertificateSerialNumber</strong>.</li>
+</ol>
+<p>  <img src="/../images/scom2.png"></p>
+<p>  Then, open <strong>mmc</strong> -&gt; <strong>File</strong> -&gt; <strong>Add or Remove Snap-ins</strong> -&gt; <strong>Certificates</strong> -&gt; <strong>Add</strong>, select <strong>Computer account</strong>, then <strong>Next</strong> and <strong>Finish</strong>. In <strong>Personal</strong> -&gt; <strong>Certificates</strong>, open the certificate that you install on management server&#x2F;gateway server&#x2F;workgroup agent, click on <strong>Details</strong> tab and check the <strong>Serial Number</strong>. The <strong>Serial number</strong> and the registry value <strong>ChannelCertificateSerialNumber</strong> should match each other.</p>
+<p>  <img src="/../images/scom3.png"></p>
+<ol start="2">
+<li><p>Confirm computer certificates on both sides are issued by the same CA.</p>
+</li>
+<li><p>The certificate must includes the private key.</p>
+</li>
+</ol>
+<p>  <img src="/../images/scom4.png"></p>
+<ol start="4">
+<li>The certificate must be trusted all the way to the root (Chain)</li>
+</ol>
+<p>  <img src="/../images/scom5.png"></p>
+<ol start="5">
+<li><p>The <strong>Common Name (CN)</strong> value in the certificate’s <strong>Subject</strong> field must match the FQDN of the computer where you imported the certificate.</p>
+</li>
+<li><p>Ensure the certificate includes both Server Authentication OID and Client Authentication OID in the Enhanced Key Usage property.</p>
+</li>
+<li><p>Check expiration date.</p>
+</li>
+<li><p>Other comments:<br>  Hash Algorithm does not need to be same between source and target.  (Ex. SHA1 on MS and SHA256 on GTW works)<br>  Key size can be 2048 and 4096.</p>
+</li>
+</ol>
+<p>  Trusted Root Certificate:</p>
+<p>  Confirm trusted Root Certificate is well imported and can be found under <strong>Trusted Root Certification Authorities</strong> – <strong>Certificates</strong>. Check expiration date.</p>
+</li>
+<li><p>On the gateway server, go to <strong>HKLM\Software\ Microsoft\Microsoft Operation Manager\3.0\Server Management Group&lt;MG Name&gt;\Parent Health Services\0</strong>. Ensure the <strong>AuthenticationName</strong> and the <strong>NetworkName</strong> match and is FQDN of management server.</p>
+<p>  In workgroup scenario, the path is <strong>HKLM\Software\ Microsoft\Microsoft Operation Manager\3.0\Agent Management Group&lt;MG Name&gt;\Parent Health Services\0</strong></p>
+</li>
+<li><p>Ensure the assigned management server in Control Panel is correct.</p>
+</li>
+<li><p><strong>Duplicate SPN</strong></p>
+<p>  On management server, identify the duplicate SPN. Any duplicate SPN’s will be listed.</p>
+  <figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">setspn <span class="literal">-x</span></span><br></pre></td></tr></table></figure>
+
+<p>  Delete the duplicate SPN</p>
+  <figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">setspn –d &lt;SPN&gt; &lt;object&gt;</span><br></pre></td></tr></table></figure>
+
+<p>  Example:</p>
+  <figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">setspn <span class="literal">-D</span> http/daserver daserver1</span><br><span class="line">setspn –d host/fscluster member</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h3><p><a target="_blank" rel="noopener" href="http://blog.ctglobalservices.com/operations-manager-scom/msk/common-issues-when-working-with-certificates-in-opsmgr/">Common issues when working with certificates in OpsMgr</a></p>
+<p><a target="_blank" rel="noopener" href="https://support.microsoft.com/en-us/help/947691/when-you-try-to-install-a-system-center-operations-manager-agent-on-a">When you try to install a System Center Operations Manager agent on a workgroup computer without using a gateway server, Operations Manager cannot see the workgroup computer</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://windyztree.github.io/2019/11/07/scom_gw_dmz/" data-id="cuidJbbNhc8JIQYqGgb0diC_6" data-title="Troubleshooting Gateway or Workgroup Communication Issue in SCOM" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Certificate/" rel="tag">Certificate</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Communication/" rel="tag">Communication</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Gateway/" rel="tag">Gateway</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Operations-Manager/" rel="tag">Operations Manager</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SCOM/" rel="tag">SCOM</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Workgroup/" rel="tag">Workgroup</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-scsm_ad_issue" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/09/30/scsm_ad_issue/" class="article-date">
+  <time class="dt-published" datetime="2019-09-29T16:00:00.000Z" itemprop="datePublished">2019-09-30</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/System-Center-Service-Manager/">System Center Service Manager</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/09/30/scsm_ad_issue/">Changes of user relationship in AD can’t be correctly synchronized to SCSM</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h3 id="Issue-Description"><a href="#Issue-Description" class="headerlink" title="Issue Description"></a>Issue Description</h3><p>The relationship of users might be not correctly updated if related users were once re-named in AD or have duplicate records in DB.</p>
+<h3 id="Cause-1-–-Known-Issue-a-renamed-user-in-AD-will-be-treated-as-a-new-object-in-SCSM"><a href="#Cause-1-–-Known-Issue-a-renamed-user-in-AD-will-be-treated-as-a-new-object-in-SCSM" class="headerlink" title="Cause 1 – Known Issue: a renamed user in AD will be treated as a new object in SCSM"></a>Cause 1 – Known Issue: a renamed user in AD will be treated as a new object in SCSM</h3><h4 id="Symptom"><a href="#Symptom" class="headerlink" title="Symptom"></a>Symptom</h4><p>There are multiple records for the same user in BaseManagedEntity.</p>
+<h4 id="Analysis"><a href="#Analysis" class="headerlink" title="Analysis"></a>Analysis</h4><p>There is a <a target="_blank" rel="noopener" href="https://blogs.technet.microsoft.com/manageabilityguys/2013/06/17/managing-username-changes-in-service-manager/" title="blog">blog</a> talking about this kind of behavior.</p>
+<p>I did a test in my lab environment (SCSM 2012 R2). After I rename a user in AD and run AD connector, there will be two objects co-existing in the table <strong>[dbo].[ManagedEntity]</strong> for the user, and two relationships in the table <strong>[dbo].[Relationship]</strong>.</p>
+<p>For example, after I change my user name from “wendi” to “wendii”, then to “wendie”, there are 3 user objects and 3 relationships in the DB.</p>
+<p>Relationship:</p>
+<p><img src="/../images/scsm1.png"></p>
+<p>BaseManagedEntity:</p>
+<p><img src="/../images/scsm2.png"></p>
+<p>Then I manually deleted “wendi” from DB, and changed the manager from “weiwen” to “Administrator” in AD. The relationship got updated for the newest object “wendie”, but not for the old object “wendii”. That resulted in two managers for the user “wendii”&#x2F;”wendie”, which is actually the same user in AD.</p>
+<p><img src="/../images/scsm3.png"></p>
+<h4 id="Resolution"><a href="#Resolution" class="headerlink" title="Resolution"></a>Resolution</h4><p>Firstly remove the duplicated users from <strong>[dbo].[ManagedEntity]</strong>.</p>
+<ol>
+<li>If you don’t want to lose the relationships associated with the old object, please use the script in the blog to move all relationships from old object to new object.</li>
+</ol>
+<p><strong>Note</strong>: In the script there is a path pointing to SCSM PowerShell Module. You may need to alter it manually based on the real location.</p>
+<ol start="2">
+<li>Remove the duplicate user object:</li>
+</ol>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$oldADUser</span> = <span class="string">&quot;wendi&quot;</span></span><br><span class="line"><span class="built_in">Get-SCClassInstance</span> <span class="literal">-Class</span> (<span class="built_in">Get-SCClass</span> <span class="literal">-Name</span> <span class="string">&quot;System.Domain.User&quot;</span>) <span class="literal">-Filter</span> <span class="string">&quot;UserName -eq <span class="variable">$oldADUser</span> | Remove-SCClassInstance</span></span><br></pre></td></tr></table></figure>
+
+<p>After confirming there is no duplicate user objects, please change the manager relationship in AD, then check if the relationship can be updated correctly by AD connector.</p>
+<h3 id="Cause-2-–-Duplicate-AD-connector-introduces-duplicate-user-records"><a href="#Cause-2-–-Duplicate-AD-connector-introduces-duplicate-user-records" class="headerlink" title="Cause 2 – Duplicate AD connector introduces duplicate user records"></a>Cause 2 – Duplicate AD connector introduces duplicate user records</h3><p>If there is only 1 record in BaseManagedEntity, but multiple records in <strong>[LFXSTG].[AD_User]</strong>, it is probably from duplicate AD connectors.</p>
+<p>We can check the data sources of the records in <strong>[LFXSTG].[AD_User]</strong>:</p>
+<p><img src="/../images/scsm4.png"></p>
+<p>This query can give you information about all data sources (connectors):</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">Select</span> <span class="operator">*</span> <span class="keyword">from</span> LFX.Datasource</span><br></pre></td></tr></table></figure>
+
+<p>A sample output:</p>
+<p><img src="/../images/scsm5.png"></p>
+<h4 id="Resolution-1"><a href="#Resolution-1" class="headerlink" title="Resolution"></a>Resolution</h4><p>Disable all duplicate connectors. After that, all users modified in the future could be correctly updated.</p>
+<p>For those users which are already affected by the issue, we can follow below steps to process them.</p>
+<ol>
+<li>Run this query in ServiceManager to get the users who have duplicate relationships with relationship isDeleted &#x3D; 0, as well as the connectors that brought the relationships.</li>
+</ol>
+<p>(This query focuses on “manager” relationship)</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">Select</span> <span class="keyword">distinct</span></span><br><span class="line">u.DisplayName <span class="string">&#x27;User Display Name&#x27;</span>,</span><br><span class="line">u.UserName_6AF77E23_669B_123F_B392_323C17097BBD <span class="string">&#x27;User&#x27;</span>, </span><br><span class="line">Manager.UserName_6AF77E23_669B_123F_B392_323C17097BBD <span class="string">&#x27;Manager&#x27;</span>, </span><br><span class="line">r.RelationshipId, </span><br><span class="line">r.IsDeleted <span class="string">&#x27;Is Relationship Deleted&#x27;</span>,</span><br><span class="line">C.DisplayName <span class="string">&#x27;Connector&#x27;</span>,</span><br><span class="line">BME.IsDeleted <span class="string">&#x27;Is Connector Deleted&#x27;</span>,</span><br><span class="line">R.LastModified</span><br><span class="line"><span class="keyword">from</span> Relationship R</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> RelationshipType RT <span class="keyword">on</span> R.RelationshipTypeId <span class="operator">=</span> RT.RelationshipTypeId</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> MT_System$Domain$<span class="keyword">User</span> Manager <span class="keyword">on</span> manager.BaseManagedEntityId <span class="operator">=</span> R.SourceEntityId</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> MT_System$Domain$<span class="keyword">User</span> U <span class="keyword">on</span> u.BaseManagedEntityId <span class="operator">=</span> r.TargetEntityId</span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span> DiscoverySourceToRelationship DSTR <span class="keyword">on</span> R.RelationshipId <span class="operator">=</span> DSTR.RelationshipId</span><br><span class="line"><span class="keyword">Left</span> <span class="keyword">join</span> DiscoverySource DS <span class="keyword">on</span> DS.DiscoverySourceId <span class="operator">=</span> DSTR.DiscoverySourceId</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> MT_Connector C <span class="keyword">on</span> <span class="keyword">convert</span>(nvarchar(<span class="number">256</span>),DS.ConnectorId) <span class="operator">=</span> C.Id</span><br><span class="line"><span class="keyword">Left</span> <span class="keyword">join</span> BaseManagedEntity BME <span class="keyword">on</span> C.BaseManagedEntityId <span class="operator">=</span> BME.BaseManagedEntityId</span><br><span class="line"><span class="keyword">where</span> RelationshipTypeName <span class="keyword">like</span> <span class="string">&#x27;%System.UserManagesUser%&#x27;</span> <span class="keyword">and</span> u.BaseManagedEntityId <span class="keyword">in</span></span><br><span class="line">(</span><br><span class="line"><span class="keyword">Select</span> </span><br><span class="line">u.BaseManagedEntityId</span><br><span class="line"><span class="keyword">from</span> Relationship R</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> RelationshipType RT <span class="keyword">on</span> R.RelationshipTypeId <span class="operator">=</span> RT.RelationshipTypeId</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> MT_System$Domain$<span class="keyword">User</span> Manager <span class="keyword">on</span> manager.BaseManagedEntityId <span class="operator">=</span> R.SourceEntityId</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> MT_System$Domain$<span class="keyword">User</span> U <span class="keyword">on</span> u.BaseManagedEntityId <span class="operator">=</span> r.TargetEntityId</span><br><span class="line"><span class="keyword">where</span> RelationshipTypeName <span class="keyword">like</span> <span class="string">&#x27;%System.UserManagesUser%&#x27;</span> <span class="keyword">and</span> r.IsDeleted <span class="operator">=</span> <span class="number">0</span></span><br><span class="line"><span class="keyword">group</span> <span class="keyword">by</span> U.UserName_6AF77E23_669B_123F_B392_323C17097BBD, u.BaseManagedEntityId</span><br><span class="line"><span class="keyword">Having</span> <span class="built_in">count</span>(u.UserName_6AF77E23_669B_123F_B392_323C17097BBD) <span class="operator">&gt;</span> <span class="number">1</span>)</span><br><span class="line"><span class="keyword">order</span> <span class="keyword">by</span> U.UserName_6AF77E23_669B_123F_B392_323C17097BBD</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>Use below steps to automate the removal of un-needed relationships whilst keeping the most current one.</li>
+</ol>
+<ul>
+<li>Copy the query result with headers and save as a .csv file.</li>
+<li>Remove the needed relationships from the .csv file.</li>
+<li>Use below PowerShell commands to remove the un-needed relationships.</li>
+</ul>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># You may change the file path.</span></span><br><span class="line"><span class="variable">$listcsv</span> = <span class="built_in">Import-Csv</span> C:\Files\UnneededRelationships.csv</span><br><span class="line"><span class="keyword">foreach</span>(<span class="variable">$list</span> <span class="keyword">in</span> <span class="variable">$listcsv</span>)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="built_in">Get-screlationshipinstance</span> <span class="literal">-id</span> <span class="variable">$listcsv</span>.RelationshipId | <span class="built_in">remove-screlationshipinstance</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://windyztree.github.io/2019/09/30/scsm_ad_issue/" data-id="cuid4lrknxoA81DS0XtLA5t9W" data-title="Changes of user relationship in AD can’t be correctly synchronized to SCSM" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AD-Connector/" rel="tag">AD Connector</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Connector/" rel="tag">Connector</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Relationship/" rel="tag">Relationship</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SCSM/" rel="tag">SCSM</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
+    <article id="post-sco2016ur4_tips" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/09/29/sco2016ur4_tips/" class="article-date">
+  <time class="dt-published" datetime="2019-09-28T16:00:00.000Z" itemprop="datePublished">2019-09-29</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/System-Center-Orchestrator/">System Center Orchestrator</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2019/09/29/sco2016ur4_tips/">Tips and Tricks for Applying SCORCH 2016 UR4 and Later Versions</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <p><strong>Note: The issues mentioned below may occur after you install Orchestrator 2016 UR4, or install later versions directly without installing UR4 first.</strong></p>
+<h3 id="Issue-1"><a href="#Issue-1" class="headerlink" title="Issue 1"></a>Issue 1</h3><p>After upgrading Orchestrator to 2016 UR4 or 1801, you may get the following error message:</p>
+<p><font color=#ff7f50><em>“Could Not Connect To The Specified Database Server”</em></font></p>
+<p>or</p>
+<p><font color=#ff7f50><em>“The Server Threw an Exception”</em></font></p>
+<h4 id="Resolution"><a href="#Resolution" class="headerlink" title="Resolution"></a>Resolution</h4><p>To avoid that, install <a target="_blank" rel="noopener" href="https://www.microsoft.com/en-us/download/details.aspx?id=50402" title="Microsoft SQL Server 2012 Native Client">Microsoft SQL Server 2012 Native Client</a> on your Orchestrator before installing the Update Rollup. It is a new prerequisite introduced by 2016 UR4, but hasn’t been well documented.</p>
+<p>If you have already installed Update Rollup 4 and are getting that error, do the following on your Orchestrator.</p>
+<ol>
+<li>Close Orchestrator</li>
+<li>Install SQL Native Client if not installed already</li>
+<li>Open <strong>Data Store Configuration</strong></li>
+<li>Enter your SQL server&#x2F;instance info in the Server field, click <strong>Next</strong></li>
+<li>Confirm Data Store information is correct, click <strong>Finish</strong></li>
+<li>Re-open Orchestrator</li>
+</ol>
+<h3 id="Issue-2"><a href="#Issue-2" class="headerlink" title="Issue 2"></a>Issue 2</h3><p>You may get below error when accessing SCORCH web service after upgrading to UR4.<br><img src="/../images/sco1.png"></p>
+<blockquote>
+<p><strong>The server encountered an error processing the request. The exception message is ‘An error occurred while executing the command definition. See the inner exception for details.’</strong>. See server logs for more details. The exception stack trace is:<br>   at System.Data.EntityClient.EntityCommandDefinition.ExecuteStoreCommands(EntityCommand entityCommand, CommandBehavior behavior)<br>   at System.Data.EntityClient.EntityCommandDefinition.Execute(EntityCommand entityCommand, CommandBehavior behavior)<br>   at System.Data.EntityClient.EntityCommand.ExecuteReader(CommandBehavior behavior)<br>   at System.Data.EntityClient.EntityCommand.ExecuteScalar[T_Result](Func`2 resultSelector)<br>   at System.Data.Objects.ObjectContext.ExecuteFunction(String functionName, ObjectParameter[] parameters)<br>   at Microsoft.SystemCenter.Orchestrator.WebService.OrchestratorContext.OnContextCreated()<br>   at invoke_constructor()<br>   at System.Data.Services.DataService`1.CreateDataSourceInstance()<br>   at System.Data.Services.DataService`1.CreateProvider()<br>   at System.Data.Services.DataService`1.HandleRequest()<br>   at System.Data.Services.DataService&#96;1.ProcessRequestForMessage(Stream messageBody)<br>   at SyncInvokeProcessRequestForMessage(Object , Object[] , Object[] )<br>   at System.ServiceModel.Dispatcher.SyncMethodInvoker.Invoke(Object instance, Object[] inputs, Object[]&amp; outputs)<br>   at System.ServiceModel.Dispatcher.DispatchOperationRuntime.InvokeBegin(MessageRpc&amp; rpc)<br>   at System.ServiceModel.Dispatcher.ImmutableDispatchRuntime.ProcessMessage5(MessageRpc&amp; rpc)<br>   at System.ServiceModel.Dispatcher.ImmutableDispatchRuntime.ProcessMessage11(MessageRpc&amp; rpc)<br>	at System.ServiceModel.Dispatcher.MessageRpc.Process(Boolean isOperationContextSet)</p>
+</blockquote>
+<h4 id="Resolution-1"><a href="#Resolution-1" class="headerlink" title="Resolution"></a>Resolution</h4><p>To resolve the issue, run below queries on Orchestrator DB to grant EXECUTE and SELECT permission to Orchestrator Operators.</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GRANT</span> <span class="keyword">EXECUTE</span> <span class="keyword">ON</span> object::[Microsoft.SystemCenter.Orchestrator].[GetSecurityToken] <span class="keyword">TO</span> [Microsoft.SystemCenter.Orchestrator.Operators]</span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">SELECT</span> <span class="keyword">ON</span> object::[Microsoft.SystemCenter.Orchestrator.Internal].[Settings] <span class="keyword">TO</span> [Microsoft.SystemCenter.Orchestrator.Operators] </span><br></pre></td></tr></table></figure>
+
+<p>Detailed troubleshooting steps can be found in <a target="_blank" rel="noopener" href="http://www.wendicai.net/?p=170">Fail to connect to Orchestrator Web Service</a>.</p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://windyztree.github.io/2019/09/29/sco2016ur4_tips/" data-id="cuidVCV-zZHUgRrC78WIHKDkS" data-title="Tips and Tricks for Applying SCORCH 2016 UR4 and Later Versions" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Deployment/" rel="tag">Deployment</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SCORCH/" rel="tag">SCORCH</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Upgrade/" rel="tag">Upgrade</a></li></ul>
 
     </footer>
   </div>
@@ -405,18 +851,30 @@
   
 
 
+  <nav id="page-nav">
+    
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+  </nav>
+
 </section>
         
           <aside id="sidebar">
   
     
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Operations-Manager/">System Center Operations Manager</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Orchestrator/">System Center Orchestrator</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Service-Manager/">System Center Service Manager</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BB%BC%E5%90%88/">综合</a></li></ul>
+    </div>
+  </div>
+
 
   
     
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kubernetes/" rel="tag">Kubernetes</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/WordPress/" rel="tag">WordPress</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" rel="tag">云服务器</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%8D%9A%E5%AE%A2/" rel="tag">博客</a></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AD-Connector/" rel="tag">AD Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Certificate/" rel="tag">Certificate</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cluster/" rel="tag">Cluster</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Communication/" rel="tag">Communication</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connection/" rel="tag">Connection</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connector/" rel="tag">Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Deployment/" rel="tag">Deployment</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Gateway/" rel="tag">Gateway</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Integration-Pack/" rel="tag">Integration Pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kubernetes/" rel="tag">Kubernetes</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Operations-Manager/" rel="tag">Operations Manager</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Postman/" rel="tag">Postman</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Relationship/" rel="tag">Relationship</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Rest-API/" rel="tag">Rest API</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCOM/" rel="tag">SCOM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCORCH/" rel="tag">SCORCH</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCSM/" rel="tag">SCSM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SPN/" rel="tag">SPN</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Discovery/" rel="tag">SQL Discovery</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Upgrade/" rel="tag">Upgrade</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Console/" rel="tag">Web Console</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Service/" rel="tag">Web Service</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/WordPress/" rel="tag">WordPress</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Workgroup/" rel="tag">Workgroup</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" rel="tag">云服务器</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%8D%9A%E5%AE%A2/" rel="tag">博客</a></li></ul>
     </div>
   </div>
 
@@ -426,7 +884,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/PHP/" style="font-size: 10px;">PHP</a> <a href="/tags/Ubuntu/" style="font-size: 10px;">Ubuntu</a> <a href="/tags/WordPress/" style="font-size: 10px;">WordPress</a> <a href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" style="font-size: 10px;">云服务器</a> <a href="/tags/%E5%8D%9A%E5%AE%A2/" style="font-size: 10px;">博客</a>
+      <a href="/tags/AD-Connector/" style="font-size: 10px;">AD Connector</a> <a href="/tags/Certificate/" style="font-size: 10px;">Certificate</a> <a href="/tags/Cluster/" style="font-size: 10px;">Cluster</a> <a href="/tags/Communication/" style="font-size: 10px;">Communication</a> <a href="/tags/Connection/" style="font-size: 15px;">Connection</a> <a href="/tags/Connector/" style="font-size: 10px;">Connector</a> <a href="/tags/Deployment/" style="font-size: 10px;">Deployment</a> <a href="/tags/Gateway/" style="font-size: 10px;">Gateway</a> <a href="/tags/Integration-Pack/" style="font-size: 10px;">Integration Pack</a> <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/Network/" style="font-size: 10px;">Network</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Operations-Manager/" style="font-size: 10px;">Operations Manager</a> <a href="/tags/PHP/" style="font-size: 10px;">PHP</a> <a href="/tags/Postman/" style="font-size: 10px;">Postman</a> <a href="/tags/PowerShell/" style="font-size: 10px;">PowerShell</a> <a href="/tags/Relationship/" style="font-size: 10px;">Relationship</a> <a href="/tags/Rest-API/" style="font-size: 10px;">Rest API</a> <a href="/tags/SCOM/" style="font-size: 20px;">SCOM</a> <a href="/tags/SCORCH/" style="font-size: 20px;">SCORCH</a> <a href="/tags/SCSM/" style="font-size: 10px;">SCSM</a> <a href="/tags/SPN/" style="font-size: 10px;">SPN</a> <a href="/tags/SQL-Discovery/" style="font-size: 10px;">SQL Discovery</a> <a href="/tags/Ubuntu/" style="font-size: 10px;">Ubuntu</a> <a href="/tags/Upgrade/" style="font-size: 10px;">Upgrade</a> <a href="/tags/Web-Console/" style="font-size: 10px;">Web Console</a> <a href="/tags/Web-Service/" style="font-size: 15px;">Web Service</a> <a href="/tags/WordPress/" style="font-size: 10px;">WordPress</a> <a href="/tags/Workgroup/" style="font-size: 10px;">Workgroup</a> <a href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" style="font-size: 10px;">云服务器</a> <a href="/tags/%E5%8D%9A%E5%AE%A2/" style="font-size: 10px;">博客</a>
     </div>
   </div>
 
@@ -435,7 +893,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Archives</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">January 2026</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">January 2026</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a></li></ul>
     </div>
   </div>
 
@@ -456,7 +914,15 @@
           </li>
         
           <li>
-            <a href="/2019/09/21/wordpress_blog/">如何用WordPress + Nginx + MySQL + PHP搭建个人博客</a>
+            <a href="/2020/05/10/sco_scom_ip/">SCORCH - SCOM IP – &#34;Failed to connect. Please verify your connection settings.&#34;</a>
+          </li>
+        
+          <li>
+            <a href="/2020/04/29/scom_sql_discovery/">SCOM - SQL DB Engine Discovery Mechanism on Cluster</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/24/sco_web_fail/">Fail to connect to Orchestrator Web Service</a>
           </li>
         
       </ul>

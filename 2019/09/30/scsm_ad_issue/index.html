@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>Changes of user relationship in AD can’t be correctly synchronized to SCSM | Wendi Cai&#39;s Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="Issue DescriptionThe relationship of users might be not correctly updated if related users were once re-named in AD or have duplicate records in DB. Cause 1 – Known Issue: a renamed user in AD will be">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Changes of user relationship in AD can’t be correctly synchronized to SCSM">
+<meta property="og:url" content="http://windyztree.github.io/2019/09/30/scsm_ad_issue/index.html">
+<meta property="og:site_name" content="Wendi Cai&#39;s Blog">
+<meta property="og:description" content="Issue DescriptionThe relationship of users might be not correctly updated if related users were once re-named in AD or have duplicate records in DB. Cause 1 – Known Issue: a renamed user in AD will be">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://windyztree.github.io/images/scsm1.png">
+<meta property="og:image" content="http://windyztree.github.io/images/scsm2.png">
+<meta property="og:image" content="http://windyztree.github.io/images/scsm3.png">
+<meta property="og:image" content="http://windyztree.github.io/images/scsm4.png">
+<meta property="og:image" content="http://windyztree.github.io/images/scsm5.png">
+<meta property="article:published_time" content="2019-09-29T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-25T05:24:28.677Z">
+<meta property="article:author" content="Wendi Cai">
+<meta property="article:tag" content="AD Connector">
+<meta property="article:tag" content="Connector">
+<meta property="article:tag" content="Relationship">
+<meta property="article:tag" content="SCSM">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://windyztree.github.io/images/scsm1.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Wendi Cai's Blog" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.2.0/css/fork-awesome.min.css">
+
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Wendi Cai&#39;s Blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Search"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://windyztree.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-scsm_ad_issue" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/09/30/scsm_ad_issue/" class="article-date">
+  <time class="dt-published" datetime="2019-09-29T16:00:00.000Z" itemprop="datePublished">2019-09-30</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/System-Center-Service-Manager/">System Center Service Manager</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      Changes of user relationship in AD can’t be correctly synchronized to SCSM
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h3 id="Issue-Description"><a href="#Issue-Description" class="headerlink" title="Issue Description"></a>Issue Description</h3><p>The relationship of users might be not correctly updated if related users were once re-named in AD or have duplicate records in DB.</p>
+<h3 id="Cause-1-–-Known-Issue-a-renamed-user-in-AD-will-be-treated-as-a-new-object-in-SCSM"><a href="#Cause-1-–-Known-Issue-a-renamed-user-in-AD-will-be-treated-as-a-new-object-in-SCSM" class="headerlink" title="Cause 1 – Known Issue: a renamed user in AD will be treated as a new object in SCSM"></a>Cause 1 – Known Issue: a renamed user in AD will be treated as a new object in SCSM</h3><h4 id="Symptom"><a href="#Symptom" class="headerlink" title="Symptom"></a>Symptom</h4><p>There are multiple records for the same user in BaseManagedEntity.</p>
+<h4 id="Analysis"><a href="#Analysis" class="headerlink" title="Analysis"></a>Analysis</h4><p>There is a <a target="_blank" rel="noopener" href="https://blogs.technet.microsoft.com/manageabilityguys/2013/06/17/managing-username-changes-in-service-manager/" title="blog">blog</a> talking about this kind of behavior.</p>
+<p>I did a test in my lab environment (SCSM 2012 R2). After I rename a user in AD and run AD connector, there will be two objects co-existing in the table <strong>[dbo].[ManagedEntity]</strong> for the user, and two relationships in the table <strong>[dbo].[Relationship]</strong>.</p>
+<p>For example, after I change my user name from “wendi” to “wendii”, then to “wendie”, there are 3 user objects and 3 relationships in the DB.</p>
+<p>Relationship:</p>
+<p><img src="/../images/scsm1.png"></p>
+<p>BaseManagedEntity:</p>
+<p><img src="/../images/scsm2.png"></p>
+<p>Then I manually deleted “wendi” from DB, and changed the manager from “weiwen” to “Administrator” in AD. The relationship got updated for the newest object “wendie”, but not for the old object “wendii”. That resulted in two managers for the user “wendii”&#x2F;”wendie”, which is actually the same user in AD.</p>
+<p><img src="/../images/scsm3.png"></p>
+<h4 id="Resolution"><a href="#Resolution" class="headerlink" title="Resolution"></a>Resolution</h4><p>Firstly remove the duplicated users from <strong>[dbo].[ManagedEntity]</strong>.</p>
+<ol>
+<li>If you don’t want to lose the relationships associated with the old object, please use the script in the blog to move all relationships from old object to new object.</li>
+</ol>
+<p><strong>Note</strong>: In the script there is a path pointing to SCSM PowerShell Module. You may need to alter it manually based on the real location.</p>
+<ol start="2">
+<li>Remove the duplicate user object:</li>
+</ol>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$oldADUser</span> = <span class="string">&quot;wendi&quot;</span></span><br><span class="line"><span class="built_in">Get-SCClassInstance</span> <span class="literal">-Class</span> (<span class="built_in">Get-SCClass</span> <span class="literal">-Name</span> <span class="string">&quot;System.Domain.User&quot;</span>) <span class="literal">-Filter</span> <span class="string">&quot;UserName -eq <span class="variable">$oldADUser</span> | Remove-SCClassInstance</span></span><br></pre></td></tr></table></figure>
+
+<p>After confirming there is no duplicate user objects, please change the manager relationship in AD, then check if the relationship can be updated correctly by AD connector.</p>
+<h3 id="Cause-2-–-Duplicate-AD-connector-introduces-duplicate-user-records"><a href="#Cause-2-–-Duplicate-AD-connector-introduces-duplicate-user-records" class="headerlink" title="Cause 2 – Duplicate AD connector introduces duplicate user records"></a>Cause 2 – Duplicate AD connector introduces duplicate user records</h3><p>If there is only 1 record in BaseManagedEntity, but multiple records in <strong>[LFXSTG].[AD_User]</strong>, it is probably from duplicate AD connectors.</p>
+<p>We can check the data sources of the records in <strong>[LFXSTG].[AD_User]</strong>:</p>
+<p><img src="/../images/scsm4.png"></p>
+<p>This query can give you information about all data sources (connectors):</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">Select</span> <span class="operator">*</span> <span class="keyword">from</span> LFX.Datasource</span><br></pre></td></tr></table></figure>
+
+<p>A sample output:</p>
+<p><img src="/../images/scsm5.png"></p>
+<h4 id="Resolution-1"><a href="#Resolution-1" class="headerlink" title="Resolution"></a>Resolution</h4><p>Disable all duplicate connectors. After that, all users modified in the future could be correctly updated.</p>
+<p>For those users which are already affected by the issue, we can follow below steps to process them.</p>
+<ol>
+<li>Run this query in ServiceManager to get the users who have duplicate relationships with relationship isDeleted &#x3D; 0, as well as the connectors that brought the relationships.</li>
+</ol>
+<p>(This query focuses on “manager” relationship)</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">Select</span> <span class="keyword">distinct</span></span><br><span class="line">u.DisplayName <span class="string">&#x27;User Display Name&#x27;</span>,</span><br><span class="line">u.UserName_6AF77E23_669B_123F_B392_323C17097BBD <span class="string">&#x27;User&#x27;</span>, </span><br><span class="line">Manager.UserName_6AF77E23_669B_123F_B392_323C17097BBD <span class="string">&#x27;Manager&#x27;</span>, </span><br><span class="line">r.RelationshipId, </span><br><span class="line">r.IsDeleted <span class="string">&#x27;Is Relationship Deleted&#x27;</span>,</span><br><span class="line">C.DisplayName <span class="string">&#x27;Connector&#x27;</span>,</span><br><span class="line">BME.IsDeleted <span class="string">&#x27;Is Connector Deleted&#x27;</span>,</span><br><span class="line">R.LastModified</span><br><span class="line"><span class="keyword">from</span> Relationship R</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> RelationshipType RT <span class="keyword">on</span> R.RelationshipTypeId <span class="operator">=</span> RT.RelationshipTypeId</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> MT_System$Domain$<span class="keyword">User</span> Manager <span class="keyword">on</span> manager.BaseManagedEntityId <span class="operator">=</span> R.SourceEntityId</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> MT_System$Domain$<span class="keyword">User</span> U <span class="keyword">on</span> u.BaseManagedEntityId <span class="operator">=</span> r.TargetEntityId</span><br><span class="line"><span class="keyword">inner</span> <span class="keyword">join</span> DiscoverySourceToRelationship DSTR <span class="keyword">on</span> R.RelationshipId <span class="operator">=</span> DSTR.RelationshipId</span><br><span class="line"><span class="keyword">Left</span> <span class="keyword">join</span> DiscoverySource DS <span class="keyword">on</span> DS.DiscoverySourceId <span class="operator">=</span> DSTR.DiscoverySourceId</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> MT_Connector C <span class="keyword">on</span> <span class="keyword">convert</span>(nvarchar(<span class="number">256</span>),DS.ConnectorId) <span class="operator">=</span> C.Id</span><br><span class="line"><span class="keyword">Left</span> <span class="keyword">join</span> BaseManagedEntity BME <span class="keyword">on</span> C.BaseManagedEntityId <span class="operator">=</span> BME.BaseManagedEntityId</span><br><span class="line"><span class="keyword">where</span> RelationshipTypeName <span class="keyword">like</span> <span class="string">&#x27;%System.UserManagesUser%&#x27;</span> <span class="keyword">and</span> u.BaseManagedEntityId <span class="keyword">in</span></span><br><span class="line">(</span><br><span class="line"><span class="keyword">Select</span> </span><br><span class="line">u.BaseManagedEntityId</span><br><span class="line"><span class="keyword">from</span> Relationship R</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> RelationshipType RT <span class="keyword">on</span> R.RelationshipTypeId <span class="operator">=</span> RT.RelationshipTypeId</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> MT_System$Domain$<span class="keyword">User</span> Manager <span class="keyword">on</span> manager.BaseManagedEntityId <span class="operator">=</span> R.SourceEntityId</span><br><span class="line"><span class="keyword">left</span> <span class="keyword">join</span> MT_System$Domain$<span class="keyword">User</span> U <span class="keyword">on</span> u.BaseManagedEntityId <span class="operator">=</span> r.TargetEntityId</span><br><span class="line"><span class="keyword">where</span> RelationshipTypeName <span class="keyword">like</span> <span class="string">&#x27;%System.UserManagesUser%&#x27;</span> <span class="keyword">and</span> r.IsDeleted <span class="operator">=</span> <span class="number">0</span></span><br><span class="line"><span class="keyword">group</span> <span class="keyword">by</span> U.UserName_6AF77E23_669B_123F_B392_323C17097BBD, u.BaseManagedEntityId</span><br><span class="line"><span class="keyword">Having</span> <span class="built_in">count</span>(u.UserName_6AF77E23_669B_123F_B392_323C17097BBD) <span class="operator">&gt;</span> <span class="number">1</span>)</span><br><span class="line"><span class="keyword">order</span> <span class="keyword">by</span> U.UserName_6AF77E23_669B_123F_B392_323C17097BBD</span><br></pre></td></tr></table></figure>
+
+<ol start="2">
+<li>Use below steps to automate the removal of un-needed relationships whilst keeping the most current one.</li>
+</ol>
+<ul>
+<li>Copy the query result with headers and save as a .csv file.</li>
+<li>Remove the needed relationships from the .csv file.</li>
+<li>Use below PowerShell commands to remove the un-needed relationships.</li>
+</ul>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># You may change the file path.</span></span><br><span class="line"><span class="variable">$listcsv</span> = <span class="built_in">Import-Csv</span> C:\Files\UnneededRelationships.csv</span><br><span class="line"><span class="keyword">foreach</span>(<span class="variable">$list</span> <span class="keyword">in</span> <span class="variable">$listcsv</span>)</span><br><span class="line">&#123;</span><br><span class="line">	<span class="built_in">Get-screlationshipinstance</span> <span class="literal">-id</span> <span class="variable">$listcsv</span>.RelationshipId | <span class="built_in">remove-screlationshipinstance</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://windyztree.github.io/2019/09/30/scsm_ad_issue/" data-id="cuid4lrknxoA81DS0XtLA5t9W" data-title="Changes of user relationship in AD can’t be correctly synchronized to SCSM" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/AD-Connector/" rel="tag">AD Connector</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Connector/" rel="tag">Connector</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Relationship/" rel="tag">Relationship</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SCSM/" rel="tag">SCSM</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/11/07/scom_gw_dmz/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Troubleshooting Gateway or Workgroup Communication Issue in SCOM
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/09/29/sco2016ur4_tips/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Tips and Tricks for Applying SCORCH 2016 UR4 and Later Versions</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Operations-Manager/">System Center Operations Manager</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Orchestrator/">System Center Orchestrator</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Service-Manager/">System Center Service Manager</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BB%BC%E5%90%88/">综合</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AD-Connector/" rel="tag">AD Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Certificate/" rel="tag">Certificate</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cluster/" rel="tag">Cluster</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Communication/" rel="tag">Communication</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connection/" rel="tag">Connection</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connector/" rel="tag">Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Deployment/" rel="tag">Deployment</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Gateway/" rel="tag">Gateway</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Integration-Pack/" rel="tag">Integration Pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kubernetes/" rel="tag">Kubernetes</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Operations-Manager/" rel="tag">Operations Manager</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Postman/" rel="tag">Postman</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Relationship/" rel="tag">Relationship</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Rest-API/" rel="tag">Rest API</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCOM/" rel="tag">SCOM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCORCH/" rel="tag">SCORCH</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCSM/" rel="tag">SCSM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SPN/" rel="tag">SPN</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Discovery/" rel="tag">SQL Discovery</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Upgrade/" rel="tag">Upgrade</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Console/" rel="tag">Web Console</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Service/" rel="tag">Web Service</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/WordPress/" rel="tag">WordPress</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Workgroup/" rel="tag">Workgroup</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" rel="tag">云服务器</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%8D%9A%E5%AE%A2/" rel="tag">博客</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AD-Connector/" style="font-size: 10px;">AD Connector</a> <a href="/tags/Certificate/" style="font-size: 10px;">Certificate</a> <a href="/tags/Cluster/" style="font-size: 10px;">Cluster</a> <a href="/tags/Communication/" style="font-size: 10px;">Communication</a> <a href="/tags/Connection/" style="font-size: 15px;">Connection</a> <a href="/tags/Connector/" style="font-size: 10px;">Connector</a> <a href="/tags/Deployment/" style="font-size: 10px;">Deployment</a> <a href="/tags/Gateway/" style="font-size: 10px;">Gateway</a> <a href="/tags/Integration-Pack/" style="font-size: 10px;">Integration Pack</a> <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/Network/" style="font-size: 10px;">Network</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Operations-Manager/" style="font-size: 10px;">Operations Manager</a> <a href="/tags/PHP/" style="font-size: 10px;">PHP</a> <a href="/tags/Postman/" style="font-size: 10px;">Postman</a> <a href="/tags/PowerShell/" style="font-size: 10px;">PowerShell</a> <a href="/tags/Relationship/" style="font-size: 10px;">Relationship</a> <a href="/tags/Rest-API/" style="font-size: 10px;">Rest API</a> <a href="/tags/SCOM/" style="font-size: 20px;">SCOM</a> <a href="/tags/SCORCH/" style="font-size: 20px;">SCORCH</a> <a href="/tags/SCSM/" style="font-size: 10px;">SCSM</a> <a href="/tags/SPN/" style="font-size: 10px;">SPN</a> <a href="/tags/SQL-Discovery/" style="font-size: 10px;">SQL Discovery</a> <a href="/tags/Ubuntu/" style="font-size: 10px;">Ubuntu</a> <a href="/tags/Upgrade/" style="font-size: 10px;">Upgrade</a> <a href="/tags/Web-Console/" style="font-size: 10px;">Web Console</a> <a href="/tags/Web-Service/" style="font-size: 15px;">Web Service</a> <a href="/tags/WordPress/" style="font-size: 10px;">WordPress</a> <a href="/tags/Workgroup/" style="font-size: 10px;">Workgroup</a> <a href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" style="font-size: 10px;">云服务器</a> <a href="/tags/%E5%8D%9A%E5%AE%A2/" style="font-size: 10px;">博客</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">January 2026</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2026/01/24/hello-world/">Hello World</a>
+          </li>
+        
+          <li>
+            <a href="/2026/01/24/k8s_deploy_tips/">参考掘金 K8s 部署教程时的防踩坑经验分享</a>
+          </li>
+        
+          <li>
+            <a href="/2020/05/10/sco_scom_ip/">SCORCH - SCOM IP – &#34;Failed to connect. Please verify your connection settings.&#34;</a>
+          </li>
+        
+          <li>
+            <a href="/2020/04/29/scom_sql_discovery/">SCOM - SQL DB Engine Discovery Mechanism on Cluster</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/24/sco_web_fail/">Fail to connect to Orchestrator Web Service</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2026 Wendi Cai<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

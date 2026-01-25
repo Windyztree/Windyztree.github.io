@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>SCORCH - SCOM IP – &#34;Failed to connect. Please verify your connection settings.&#34; | Wendi Cai&#39;s Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="Issue DefinitionAfter regsitering and deploying SCOM Integration Pack (IP) in Orchestrator, we need to configure a connection to specify link to your SCOM management server (Refer to Configure the con">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SCORCH - SCOM IP – &quot;Failed to connect. Please verify your connection settings.&quot;">
+<meta property="og:url" content="http://windyztree.github.io/2020/05/10/sco_scom_ip/index.html">
+<meta property="og:site_name" content="Wendi Cai&#39;s Blog">
+<meta property="og:description" content="Issue DefinitionAfter regsitering and deploying SCOM Integration Pack (IP) in Orchestrator, we need to configure a connection to specify link to your SCOM management server (Refer to Configure the con">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://windyztree.github.io/images/sco10.jpg">
+<meta property="article:published_time" content="2020-05-09T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-25T05:43:28.749Z">
+<meta property="article:author" content="Wendi Cai">
+<meta property="article:tag" content="Connection">
+<meta property="article:tag" content="Integration Pack">
+<meta property="article:tag" content="Network">
+<meta property="article:tag" content="SCOM">
+<meta property="article:tag" content="SCORCH">
+<meta property="article:tag" content="SPN">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://windyztree.github.io/images/sco10.jpg">
+  
+    <link rel="alternate" href="/atom.xml" title="Wendi Cai's Blog" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.2.0/css/fork-awesome.min.css">
+
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Wendi Cai&#39;s Blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Search"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://windyztree.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-sco_scom_ip" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2020/05/10/sco_scom_ip/" class="article-date">
+  <time class="dt-published" datetime="2020-05-09T16:00:00.000Z" itemprop="datePublished">2020-05-10</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/System-Center-Orchestrator/">System Center Orchestrator</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      SCORCH - SCOM IP – &#34;Failed to connect. Please verify your connection settings.&#34;
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h3 id="Issue-Definition"><a href="#Issue-Definition" class="headerlink" title="Issue Definition"></a>Issue Definition</h3><p>After regsitering and deploying SCOM Integration Pack (IP) in Orchestrator, we need to configure a connection to specify link to your SCOM management server (Refer to <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/system-center/orchestrator/integration-pack-for-operations-manager?view=sc-orch-2019" title="Configure the connection">Configure the connection</a>).</p>
+<p>However, when you click on the <strong>Test Connection</strong> button, you might receive the error <font color=#ff7f50><em>“Failed to connect. Pleae verify your connection settings.”</em></font></p>
+<h3 id="Troubleshooting-Tips"><a href="#Troubleshooting-Tips" class="headerlink" title="Troubleshooting Tips"></a>Troubleshooting Tips</h3><h4 id="Verify-Configurations"><a href="#Verify-Configurations" class="headerlink" title="Verify Configurations"></a>Verify Configurations</h4><ul>
+<li><p>Ensure the account we use for connection a member of <strong>local Administrator</strong> on the SCOM server and a member of <strong>Operations Manager Administrators</strong> user role.</p>
+</li>
+<li><p>(<strong>Only for SCOM 2012 IP</strong>) A SCOM console of the same version must be installed on the server that hosts the Runbook Designer. And we should be able to connect to SCOM server from the console with the same account.</p>
+<p>  Note: SCOM 2016 IP no longer requires SCOM console to be installed on Runbook Designer.</p>
+</li>
+<li><p>Check whether TLS 1.0 is disabled on SCOM management server and SCORCH server.</p>
+<p>  We have a known issue that connection fails with the same error in SCORCH 2016 + SCOM 2016 environment with TLS 1.0 disabled. If TLS 1.0 is disabled in your environment, try enabling it an testing the connection again.</p>
+</li>
+<li><p>Ensure .Net Framwork 3.5 is installed.</p>
+</li>
+</ul>
+<p><a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/enable-net-framework-35-by-using-windows-powershell" title="Installing .Net Framework 3.5 with PowerShell">Installing .Net Framework 3.5 with PowerShell</a></p>
+<p><a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/windows-hardware/manufacture/desktop/enable-net-framework-35-by-using-the-add-roles-and-features-wizard" title="Enable .NET Framework 3.5 by using the Add Roles and Features Wizard">Enable .NET Framework 3.5 by using the Add Roles and Features Wizard</a></p>
+<h4 id="Network-Trace"><a href="#Network-Trace" class="headerlink" title="Network Trace"></a>Network Trace</h4><p>If all configurations above are verified, we can use <a target="_blank" rel="noopener" href="https://www.microsoft.com/en-ie/download/details.aspx?id=4865" title="Network Monitor">Network Monitor</a> to capture a network trace and see what causes the failure.</p>
+<p>Pay attention to Kerberos records. If there is Kerberos error, check if SCOM SPN is correct: <a target="_blank" rel="noopener" href="https://kevinholman.com/2011/08/08/opsmgr-2012-what-should-the-spns-look-like/" title="OpsMgr 2012: What should the SPN’s look like?">OpsMgr 2012: What should the SPN’s look like?</a></p>
+<p>Here is an example of Kerberos error in network trace. The error is <strong>KererosV5:KRB_ERROR -KDC_ERR_S_PRINCIPAL_UNKNOWN(7)</strong> and indicates an SPN issue.</p>
+<p><img src="/../images/sco10.jpg"></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://windyztree.github.io/2020/05/10/sco_scom_ip/" data-id="cuidsTYSPMs788erlvROuYUqQ" data-title="SCORCH - SCOM IP – &#34;Failed to connect. Please verify your connection settings.&#34;" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Connection/" rel="tag">Connection</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Integration-Pack/" rel="tag">Integration Pack</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Network/" rel="tag">Network</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SCOM/" rel="tag">SCOM</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SCORCH/" rel="tag">SCORCH</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SPN/" rel="tag">SPN</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2026/01/24/k8s_deploy_tips/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          参考掘金 K8s 部署教程时的防踩坑经验分享
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2020/04/29/scom_sql_discovery/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">SCOM - SQL DB Engine Discovery Mechanism on Cluster</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Operations-Manager/">System Center Operations Manager</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Orchestrator/">System Center Orchestrator</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Service-Manager/">System Center Service Manager</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BB%BC%E5%90%88/">综合</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AD-Connector/" rel="tag">AD Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Certificate/" rel="tag">Certificate</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cluster/" rel="tag">Cluster</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Communication/" rel="tag">Communication</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connection/" rel="tag">Connection</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connector/" rel="tag">Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Deployment/" rel="tag">Deployment</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Gateway/" rel="tag">Gateway</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Integration-Pack/" rel="tag">Integration Pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kubernetes/" rel="tag">Kubernetes</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Operations-Manager/" rel="tag">Operations Manager</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Postman/" rel="tag">Postman</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Relationship/" rel="tag">Relationship</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Rest-API/" rel="tag">Rest API</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCOM/" rel="tag">SCOM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCORCH/" rel="tag">SCORCH</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCSM/" rel="tag">SCSM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SPN/" rel="tag">SPN</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Discovery/" rel="tag">SQL Discovery</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Upgrade/" rel="tag">Upgrade</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Console/" rel="tag">Web Console</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Service/" rel="tag">Web Service</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/WordPress/" rel="tag">WordPress</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Workgroup/" rel="tag">Workgroup</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" rel="tag">云服务器</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%8D%9A%E5%AE%A2/" rel="tag">博客</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AD-Connector/" style="font-size: 10px;">AD Connector</a> <a href="/tags/Certificate/" style="font-size: 10px;">Certificate</a> <a href="/tags/Cluster/" style="font-size: 10px;">Cluster</a> <a href="/tags/Communication/" style="font-size: 10px;">Communication</a> <a href="/tags/Connection/" style="font-size: 15px;">Connection</a> <a href="/tags/Connector/" style="font-size: 10px;">Connector</a> <a href="/tags/Deployment/" style="font-size: 10px;">Deployment</a> <a href="/tags/Gateway/" style="font-size: 10px;">Gateway</a> <a href="/tags/Integration-Pack/" style="font-size: 10px;">Integration Pack</a> <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/Network/" style="font-size: 10px;">Network</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Operations-Manager/" style="font-size: 10px;">Operations Manager</a> <a href="/tags/PHP/" style="font-size: 10px;">PHP</a> <a href="/tags/Postman/" style="font-size: 10px;">Postman</a> <a href="/tags/PowerShell/" style="font-size: 10px;">PowerShell</a> <a href="/tags/Relationship/" style="font-size: 10px;">Relationship</a> <a href="/tags/Rest-API/" style="font-size: 10px;">Rest API</a> <a href="/tags/SCOM/" style="font-size: 20px;">SCOM</a> <a href="/tags/SCORCH/" style="font-size: 20px;">SCORCH</a> <a href="/tags/SCSM/" style="font-size: 10px;">SCSM</a> <a href="/tags/SPN/" style="font-size: 10px;">SPN</a> <a href="/tags/SQL-Discovery/" style="font-size: 10px;">SQL Discovery</a> <a href="/tags/Ubuntu/" style="font-size: 10px;">Ubuntu</a> <a href="/tags/Upgrade/" style="font-size: 10px;">Upgrade</a> <a href="/tags/Web-Console/" style="font-size: 10px;">Web Console</a> <a href="/tags/Web-Service/" style="font-size: 15px;">Web Service</a> <a href="/tags/WordPress/" style="font-size: 10px;">WordPress</a> <a href="/tags/Workgroup/" style="font-size: 10px;">Workgroup</a> <a href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" style="font-size: 10px;">云服务器</a> <a href="/tags/%E5%8D%9A%E5%AE%A2/" style="font-size: 10px;">博客</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">January 2026</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2026/01/24/hello-world/">Hello World</a>
+          </li>
+        
+          <li>
+            <a href="/2026/01/24/k8s_deploy_tips/">参考掘金 K8s 部署教程时的防踩坑经验分享</a>
+          </li>
+        
+          <li>
+            <a href="/2020/05/10/sco_scom_ip/">SCORCH - SCOM IP – &#34;Failed to connect. Please verify your connection settings.&#34;</a>
+          </li>
+        
+          <li>
+            <a href="/2020/04/29/scom_sql_discovery/">SCOM - SQL DB Engine Discovery Mechanism on Cluster</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/24/sco_web_fail/">Fail to connect to Orchestrator Web Service</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2026 Wendi Cai<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

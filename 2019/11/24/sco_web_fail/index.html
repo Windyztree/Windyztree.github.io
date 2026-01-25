@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>Fail to connect to Orchestrator Web Service | Wendi Cai&#39;s Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="Error MessageThe same error may occur after applying SCORCH 2016 UR4 and later versions. See Tips and Tricks for Applying SCORCH 2016 UR4 and Later Versions.  Request Error The server encountered an e">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Fail to connect to Orchestrator Web Service">
+<meta property="og:url" content="http://windyztree.github.io/2019/11/24/sco_web_fail/index.html">
+<meta property="og:site_name" content="Wendi Cai&#39;s Blog">
+<meta property="og:description" content="Error MessageThe same error may occur after applying SCORCH 2016 UR4 and later versions. See Tips and Tricks for Applying SCORCH 2016 UR4 and Later Versions.  Request Error The server encountered an e">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://windyztree.github.io/images/sco9.png">
+<meta property="article:published_time" content="2019-11-23T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-25T05:39:39.618Z">
+<meta property="article:author" content="Wendi Cai">
+<meta property="article:tag" content="Connection">
+<meta property="article:tag" content="SCORCH">
+<meta property="article:tag" content="Web Service">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://windyztree.github.io/images/sco9.png">
+  
+    <link rel="alternate" href="/atom.xml" title="Wendi Cai's Blog" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.2.0/css/fork-awesome.min.css">
+
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Wendi Cai&#39;s Blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Search"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://windyztree.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-sco_web_fail" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2019/11/24/sco_web_fail/" class="article-date">
+  <time class="dt-published" datetime="2019-11-23T16:00:00.000Z" itemprop="datePublished">2019-11-24</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/System-Center-Orchestrator/">System Center Orchestrator</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      Fail to connect to Orchestrator Web Service
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h3 id="Error-Message"><a href="#Error-Message" class="headerlink" title="Error Message"></a>Error Message</h3><p>The same error may occur after applying SCORCH 2016 UR4 and later versions. See <a target="_blank" rel="noopener" href="http://www.wendicai.net/?p=42">Tips and Tricks for Applying SCORCH 2016 UR4 and Later Versions</a>.</p>
+<blockquote>
+<p>Request Error</p>
+<p>The server encountered an error processing the request. The exception message is <font color=#ff7f50><strong>‘An error occurred while executing the command definition. See the inner exception for details.’</strong></font>. See Server logs for more details. The exception stack trace is:</p>
+<p>at System.Data.EntityClient.EntityCommandDefinition.ExecuteStoreCommands(EntityCommand entityCommand, CommandBehavior behavior)<br>at System.Data.EntityClient.EntityCommandDefinition.Execute(EntityCommand entityCommand, CommandBehavior behavior)<br>at System.Data.EntityClient.EntityCommand.ExecuteReader(CommandBehavior behavior)<br>at System.Da.EntityCIient.EntityCommand.ExecuteScalar[T_Result](Func`2 resultSelector)<br>at System.Data.Objects.ObjectContext.ExecuteFunction(String functionName, ObjectParameter[] parameters)<br>at Microsoft.SystemCenter.Orchestrator.WebService.OrchestratorContext.ComputeAuthorizationCache(NuIlable`1 tokenld)<br>at Microsoft.SystemCenter.Orchestrator.WebService.OrchestratorContext.OnContextCreated()<br>at invoke_constructor()<br>at System.Data.Services.DataService`1.CreateProvider()<br>at System.Data.Services.DataService`1.HandleRequest()<br>at System.Data.Services.DataService`1.ProcessRequestForMessage(Stream messageBody)<br>at SynclnvokeProcessRequestForMessage(Object, Object[], Object[])<br>at System.ServiceModel.Dispatcher.SyncMethodInvoker.Invoke(Object instance, Object[] inputs, Object[]&amp; outputs)<br>at System.ServiceModel.Dispatcher.DispatchOperationRuntime.InvokeBegin(MessageRpc&amp; rpt)<br>at System.ServiceModel.Dispatcher.ImmutableDispatchRuntime.ProcessMessage5(MessageRpc&amp; rpc)<br>at System.ServiceModel.Dispatcher.ImmutableDispatchRuntime.ProcessMessage31(MessageRpc&amp; rpc)<br>at System.ServiceModel.Dispatcher.MessageRpC.Process(Boolean isOperationContextSet)at System.ServiceModel.Dispatcher.MessageRpC.Process(Boolean isOperationContextSet)</p>
+</blockquote>
+<h3 id="Troubleshooting"><a href="#Troubleshooting" class="headerlink" title="Troubleshooting"></a>Troubleshooting</h3><p>This error usually indicates some issues in the Orchestrator DB.</p>
+<ol>
+<li>Ensure Orchestrator DB disk space is enough.</li>
+<li>Run below queries on Orchestrator DB to ensure enough permission, and try again.</li>
+</ol>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">GRANT</span> <span class="keyword">EXECUTE</span> <span class="keyword">ON</span> object::[Microsoft.SystemCenter.Orchestrator].[GetSecurityToken] <span class="keyword">TO</span> [Microsoft.SystemCenter.Orchestrator.Operators]</span><br><span class="line"><span class="keyword">GRANT</span> <span class="keyword">SELECT</span> <span class="keyword">ON</span> object::[Microsoft.SystemCenter.Orchestrator.Internal].[Settings] <span class="keyword">TO</span> [Microsoft.SystemCenter.Orchestrator.Operators]</span><br></pre></td></tr></table></figure>
+
+<ol start="3">
+<li>Check whether the service <strong><a target="_blank" rel="noopener" href="http://schemas.microsoft.com/SystemCenter/Orchestrator/Maintenance/MaintenanceService">http://schemas.microsoft.com/SystemCenter/Orchestrator/Maintenance/MaintenanceService</a></strong> and queue <strong>[Microsoft.SystemCenter.Orchestrator.Maintenance].[MaintenanceServiceQueue]</strong> are there in Orchestrator DB. If they are missing, we need to create them manually.</li>
+</ol>
+<p><img src="/../images/sco9.png"></p>
+<ol start="4">
+<li>If the issue only occurred recently and we have a backup of the Orchestrator DB prior to this issue, we can restore the backup as a quick solution.</li>
+</ol>
+<h4 id="Log-Analysis"><a href="#Log-Analysis" class="headerlink" title="Log Analysis"></a>Log Analysis</h4><p>Use <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/sysinternals/downloads/procdump" title="procdump">procdump</a> to display the exception.</p>
+<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Procdump <span class="literal">-e</span> <span class="number">1</span> <span class="operator">-f</span> <span class="string">&quot;&quot;</span> &lt;PID of w3wp.exe&gt;</span><br></pre></td></tr></table></figure>
+
+<p>Below is an example output.</p>
+<blockquote>
+<p>[00:28:10] Exception: E0434F4D.System.Configuration.ConfigurationErrorsException (“This element is not currently associated with any context”)<br>[00:28:10] Exception: E0434F4D.System.Data.SqlClient.SqlException (“The SELECT permission was denied on the object ‘Settings’, database ‘Orchestrator’, schema ‘Microsoft.SystemCenter.Orchestrator.Internal’.”)<br>[00:28:10] Exception: E0434F4D.System.Data.SqlClient.SqlException (“The SELECT permission was denied on the object ‘Settings’, database ‘Orchestrator’, schema ‘Microsoft.SystemCenter.Orchestrator.Internal’.”)<br>[00:28:10] Exception: E0434F4D.System.Data.SqlClient.SqlException (<font color=#ff7f50><strong>“The SELECT permission was denied on the object ‘Settings’, database ‘Orchestrator’, schema ‘Microsoft.SystemCenter.Orchestrator.Internal’.”</strong></font>)<br>[00:28:10] Exception: E0434F4D.System.Data.SqlClient.SqlException (“The SELECT permission was denied on the object ‘Settings’, database ‘Orchestrator’, schema ‘Microsoft.SystemCenter.Orchestrator.Internal’.”)<br>[00:28:10] Exception: E0434F4D.System.Data.SqlClient.SqlException (“The EXECUTE permission was denied on the object ‘GetSecurityToken’, database ‘Orchestrator’, schema ‘Microsoft.SystemCenter.Orchestrator’.”)<br>[00:28:10] Exception: E0434F4D.System.Data.SqlClient.SqlException (“The EXECUTE permission was denied on the object ‘GetSecurityToken’, database ‘Orchestrator’, schema ‘Microsoft.SystemCenter.Orchestrator’.”)<br>[00:28:10] Exception: E0434F4D.System.Data.SqlClient.SqlException (<font color=#ff7f50><strong>“The EXECUTE permission was denied on the object ‘GetSecurityToken’, database ‘Orchestrator’, schema ‘Microsoft.SystemCenter.Orchestrator’.”</strong></font>)<br>[00:28:10] Exception: E0434F4D.System.Data.SqlClient.SqlException (“The EXECUTE permission was denied on the object ‘GetSecurityToken’, database ‘Orchestrator’, schema ‘Microsoft.SystemCenter.Orchestrator’.”)<br>[00:28:10] Exception: E0434F4D.System.Data.EntityCommandExecutionException (<font color=#1F9F3E><strong>“An error occurred while executing the command definition. See the inner exception for details.”</strong></font>)<br>[00:28:10] Exception: E0434F4D.System.Data.EntityCommandExecutionException (“An error occurred while executing the command definition. See the inner exception for details.”)<br>[00:28:10] Exception: E0434F4D.System.Data.EntityCommandExecutionException (“An error occurred while executing the command definition. See the inner exception for details.”)<br>[00:28:10] Exception: E0434F4D.System.Data.EntityCommandExecutionException (“An error occurred while executing the command definition. See the inner exception for details.”)<br>[00:28:10] Exception: E0434F4D.System.Data.EntityCommandExecutionException (“An error occurred while executing the command definition. See the inner exception for details.”)</p>
+</blockquote>
+<p>In this example, the solution will be as shown in <strong>Troubleshooting - 2</strong>.</p>
+<h3 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h3><p><a target="_blank" rel="noopener" href="https://sc-orchestrator.vasol.eu/request-error-while-opening-orchestrator-web-services/" title="Request Error – while Opening Orchestrator Web Services">Request Error – while Opening Orchestrator Web Services</a></p>
+<p><a target="_blank" rel="noopener" href="https://support.microsoft.com/en-us/help/2919041/the-orchestration-console-cannot-be-opened-after-upgrading-to-system-c" title="The Orchestration Console cannot be opened after upgrading to System Center 2012 R2">The Orchestration Console cannot be opened after upgrading to System Center 2012 R2</a></p>
+<p><a target="_blank" rel="noopener" href="https://blogs.technet.microsoft.com/silvana/2016/08/11/orchestrator-orchestration-console-and-web-service-are-not-working-anymore/" title="[Orchestrator] Orchestration Console and Web Service are not working anymore">[Orchestrator] Orchestration Console and Web Service are not working anymore</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://windyztree.github.io/2019/11/24/sco_web_fail/" data-id="cuid24mZ_SVfxbx7Vs0Q96BFz" data-title="Fail to connect to Orchestrator Web Service" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Connection/" rel="tag">Connection</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/SCORCH/" rel="tag">SCORCH</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Web-Service/" rel="tag">Web Service</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2020/04/29/scom_sql_discovery/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          SCOM - SQL DB Engine Discovery Mechanism on Cluster
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/11/16/scom_web_console/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">SCOM Web Console – &#34;Web Console Configuration Required&#34;</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Operations-Manager/">System Center Operations Manager</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Orchestrator/">System Center Orchestrator</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Service-Manager/">System Center Service Manager</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BB%BC%E5%90%88/">综合</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AD-Connector/" rel="tag">AD Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Certificate/" rel="tag">Certificate</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cluster/" rel="tag">Cluster</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Communication/" rel="tag">Communication</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connection/" rel="tag">Connection</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connector/" rel="tag">Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Deployment/" rel="tag">Deployment</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Gateway/" rel="tag">Gateway</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Integration-Pack/" rel="tag">Integration Pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kubernetes/" rel="tag">Kubernetes</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Operations-Manager/" rel="tag">Operations Manager</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Postman/" rel="tag">Postman</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Relationship/" rel="tag">Relationship</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Rest-API/" rel="tag">Rest API</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCOM/" rel="tag">SCOM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCORCH/" rel="tag">SCORCH</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCSM/" rel="tag">SCSM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SPN/" rel="tag">SPN</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Discovery/" rel="tag">SQL Discovery</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Upgrade/" rel="tag">Upgrade</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Console/" rel="tag">Web Console</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Service/" rel="tag">Web Service</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/WordPress/" rel="tag">WordPress</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Workgroup/" rel="tag">Workgroup</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" rel="tag">云服务器</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%8D%9A%E5%AE%A2/" rel="tag">博客</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AD-Connector/" style="font-size: 10px;">AD Connector</a> <a href="/tags/Certificate/" style="font-size: 10px;">Certificate</a> <a href="/tags/Cluster/" style="font-size: 10px;">Cluster</a> <a href="/tags/Communication/" style="font-size: 10px;">Communication</a> <a href="/tags/Connection/" style="font-size: 15px;">Connection</a> <a href="/tags/Connector/" style="font-size: 10px;">Connector</a> <a href="/tags/Deployment/" style="font-size: 10px;">Deployment</a> <a href="/tags/Gateway/" style="font-size: 10px;">Gateway</a> <a href="/tags/Integration-Pack/" style="font-size: 10px;">Integration Pack</a> <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/Network/" style="font-size: 10px;">Network</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Operations-Manager/" style="font-size: 10px;">Operations Manager</a> <a href="/tags/PHP/" style="font-size: 10px;">PHP</a> <a href="/tags/Postman/" style="font-size: 10px;">Postman</a> <a href="/tags/PowerShell/" style="font-size: 10px;">PowerShell</a> <a href="/tags/Relationship/" style="font-size: 10px;">Relationship</a> <a href="/tags/Rest-API/" style="font-size: 10px;">Rest API</a> <a href="/tags/SCOM/" style="font-size: 20px;">SCOM</a> <a href="/tags/SCORCH/" style="font-size: 20px;">SCORCH</a> <a href="/tags/SCSM/" style="font-size: 10px;">SCSM</a> <a href="/tags/SPN/" style="font-size: 10px;">SPN</a> <a href="/tags/SQL-Discovery/" style="font-size: 10px;">SQL Discovery</a> <a href="/tags/Ubuntu/" style="font-size: 10px;">Ubuntu</a> <a href="/tags/Upgrade/" style="font-size: 10px;">Upgrade</a> <a href="/tags/Web-Console/" style="font-size: 10px;">Web Console</a> <a href="/tags/Web-Service/" style="font-size: 15px;">Web Service</a> <a href="/tags/WordPress/" style="font-size: 10px;">WordPress</a> <a href="/tags/Workgroup/" style="font-size: 10px;">Workgroup</a> <a href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" style="font-size: 10px;">云服务器</a> <a href="/tags/%E5%8D%9A%E5%AE%A2/" style="font-size: 10px;">博客</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">January 2026</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2026/01/24/hello-world/">Hello World</a>
+          </li>
+        
+          <li>
+            <a href="/2026/01/24/k8s_deploy_tips/">参考掘金 K8s 部署教程时的防踩坑经验分享</a>
+          </li>
+        
+          <li>
+            <a href="/2020/05/10/sco_scom_ip/">SCORCH - SCOM IP – &#34;Failed to connect. Please verify your connection settings.&#34;</a>
+          </li>
+        
+          <li>
+            <a href="/2020/04/29/scom_sql_discovery/">SCOM - SQL DB Engine Discovery Mechanism on Cluster</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/24/sco_web_fail/">Fail to connect to Orchestrator Web Service</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2026 Wendi Cai<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>
