@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  
+  <title>Kubernetes 故障排查：API Server 无法连接与 CRI-Dockerd 开机自动启动失败 | Wendi Cai&#39;s Blog</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="Kubernetes 故障排查：API Server 无法连接与 CRI-Dockerd 开机自动启动失败1. 问题现象在部署 Kubernetes v1.24+ 版本（如 v1.35）并使用 Docker 作为运行时环境时，重启 Master 节点后，执行 kubectl get nodes 出现连接被拒绝的报错： 1E0123 06:25:39.253691    5936 memcache.">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Kubernetes 故障排查：API Server 无法连接与 CRI-Dockerd 开机自动启动失败">
+<meta property="og:url" content="http://windyztree.github.io/2026/01/31/cri_dockerd_boot_fix/index.html">
+<meta property="og:site_name" content="Wendi Cai&#39;s Blog">
+<meta property="og:description" content="Kubernetes 故障排查：API Server 无法连接与 CRI-Dockerd 开机自动启动失败1. 问题现象在部署 Kubernetes v1.24+ 版本（如 v1.35）并使用 Docker 作为运行时环境时，重启 Master 节点后，执行 kubectl get nodes 出现连接被拒绝的报错： 1E0123 06:25:39.253691    5936 memcache.">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2026-01-30T16:00:00.000Z">
+<meta property="article:modified_time" content="2026-01-31T13:28:36.412Z">
+<meta property="article:author" content="Wendi Cai">
+<meta property="article:tag" content="CRI-Dockerd">
+<meta property="article:tag" content="Kubernetes">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="Wendi Cai's Blog" type="application/atom+xml">
+  
+  
+    <link rel="shortcut icon" href="/favicon.png">
+  
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+  
+    
+<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
+
+  
+  
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fork-awesome@1.2.0/css/fork-awesome.min.css">
+
+<meta name="generator" content="Hexo 8.1.1"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Wendi Cai&#39;s Blog</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"><span class="fa fa-bars"></span></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+        
+          <a class="nav-icon" href="/atom.xml" title="RSS Feed"><span class="fa fa-rss"></span></a>
+        
+        <a class="nav-icon nav-search-btn" title="Search"><span class="fa fa-search"></span></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://windyztree.github.io"></form>
+      </div>
+    </div>
+  </div>
+</header>
+
+      <div class="outer">
+        <section id="main"><article id="post-cri_dockerd_boot_fix" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2026/01/31/cri_dockerd_boot_fix/" class="article-date">
+  <time class="dt-published" datetime="2026-01-30T16:00:00.000Z" itemprop="datePublished">2026-01-31</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Kubernetes/">Kubernetes</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="p-name article-title" itemprop="headline name">
+      Kubernetes 故障排查：API Server 无法连接与 CRI-Dockerd 开机自动启动失败
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="Kubernetes-故障排查：API-Server-无法连接与-CRI-Dockerd-开机自动启动失败"><a href="#Kubernetes-故障排查：API-Server-无法连接与-CRI-Dockerd-开机自动启动失败" class="headerlink" title="Kubernetes 故障排查：API Server 无法连接与 CRI-Dockerd 开机自动启动失败"></a>Kubernetes 故障排查：API Server 无法连接与 CRI-Dockerd 开机自动启动失败</h1><h2 id="1-问题现象"><a href="#1-问题现象" class="headerlink" title="1. 问题现象"></a>1. 问题现象</h2><p>在部署 Kubernetes v1.24+ 版本（如 v1.35）并使用 Docker 作为运行时环境时，重启 Master 节点后，执行 <code>kubectl get nodes</code> 出现连接被拒绝的报错：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">E0123 06:25:39.253691    5936 memcache.go:265] <span class="string">&quot;Unhandled Error&quot;</span> err=<span class="string">&quot;couldn&#x27;t get current server API group list: Get \&quot;https://master:6443/api?timeout=32s\&quot;: dial tcp 192.168.109.100:6443: connect: connection refused&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>进一步排查 <code>kubelet</code> 服务日志 (<code>journalctl -xefu kubelet</code>)，发现关键报错：</p>
+<blockquote>
+<p><code>Error while dialing: dial unix /var/run/cri-dockerd.sock: connect: no such file or directory</code></p>
+</blockquote>
+<p>检查 <code>cri-dockerd</code> 服务状态时，发现服务未启动。但其实我是配置了<code>cri-dockerd</code>服务开机自动启动的，所以这里的主要问题是为什么自动启动失败。</p>
+<p>进一步查看报错，提示 Socket 无法加载主服务：</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemd[1]: cri-docker.socket: Socket service cri-docker.service not loaded, refusing.</span><br><span class="line">systemd[1]: Failed to listen on cri-docker.socket.</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="2-原因分析"><a href="#2-原因分析" class="headerlink" title="2. 原因分析"></a>2. 原因分析</h2><ol>
+<li><strong>API Server 无法连接的原因</strong>：Kubernetes v1.24+ 移除了 Dockershim，使用 Docker 必须通过 <code>cri-dockerd</code> 中间件。如果 <code>cri-dockerd</code> 未运行，Kubelet 就无法驱动 Docker，导致 API Server 容器无法启动。</li>
+<li><strong><code>cri-dockerd</code> 服务启动失败的原因</strong>：<code>cri-dockerd</code> 通常配置为 Socket Activation 模式。这意味着 <code>cri-dockerd.socket</code> 负责创建 <code>/var/run/cri-dockerd.sock</code> 文件并监听请求，收到请求后才拉起 <code>cri-dockerd.service</code>。如果 Socket 没启动，Kubelet 就找不到 sock 文件。</li>
+<li><strong>Socket未启动的原因</strong>：<ul>
+<li><strong>命名不一致</strong>：Socket 文件配置了 <code>PartOf=cri-dockerd.service</code>，但文件系统中只有 <code>cri-docker.service</code>（少了个 d），导致 Systemd 找不到依赖服务。</li>
+<li><strong>语法错误</strong>：Systemd Unit 文件中<strong>不支持行内注释</strong>（如 <code>Requires=xxx # 注释</code>），这会导致整行解析失败，依赖关系失效。</li>
+</ul>
+</li>
+</ol>
+<h2 id="3-解决方案"><a href="#3-解决方案" class="headerlink" title="3. 解决方案"></a>3. 解决方案</h2><h3 id="1-先停止并禁用可能存在的旧服务，避免冲突"><a href="#1-先停止并禁用可能存在的旧服务，避免冲突" class="headerlink" title="1. 先停止并禁用可能存在的旧服务，避免冲突"></a>1. 先停止并禁用可能存在的旧服务，避免冲突</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">systemctl stop cri-docker.socket cri-docker.service</span><br><span class="line">systemctl <span class="built_in">disable</span> cri-docker.socket cri-docker.service</span><br><span class="line"><span class="comment"># 如果文件存在，删除它们</span></span><br><span class="line"><span class="built_in">rm</span> -f /etc/systemd/system/cri-docker.socket</span><br><span class="line"><span class="built_in">rm</span> -f /etc/systemd/system/cri-docker.service</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-规范化服务名称与配置"><a href="#2-规范化服务名称与配置" class="headerlink" title="2.规范化服务名称与配置"></a>2.规范化服务名称与配置</h3><p>为了避免混淆，建议统一将 Service 和 Socket 文件命名为 <code>cri-dockerd</code>（带 d）。</p>
+<p><strong>修复 Service 文件</strong> (<code>/etc/systemd/system/cri-dockerd.service</code>)：<br><em>注意：去掉所有行内注释，确保无多余换行。</em></p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[Unit]</span></span><br><span class="line"><span class="attr">Description</span>=CRI Interface for Docker Application Container Engine</span><br><span class="line"><span class="attr">Documentation</span>=https://docs.mirantis.com</span><br><span class="line"><span class="attr">After</span>=network-<span class="literal">on</span>line.target firewalld.service docker.service</span><br><span class="line"><span class="attr">Wants</span>=network-<span class="literal">on</span>line.target</span><br><span class="line"><span class="attr">Requires</span>=cri-dockerd.socket</span><br><span class="line"> </span><br><span class="line"><span class="section">[Service]</span></span><br><span class="line"><span class="attr">Type</span>=notify</span><br><span class="line"><span class="attr">ExecStart</span>=/usr/local/bin/cri-dockerd --pod-infra-container-image=registry.cn-hangzhou.aliyuncs.com/google_containers/pause:<span class="number">3.10</span> --network-plugin=cni --cni-conf-dir=/etc/cni/net.d --cni-bin-dir=/opt/cni/bin --container-runtime-endpoint=unix:///var/run/cri-dockerd.sock --docker-endpoint=unix:///var/run/docker.sock --cri-dockerd-root-directory=/var/lib/docker</span><br><span class="line"><span class="attr">ExecReload</span>=/bin/kill -s HUP <span class="variable">$MAINPID</span></span><br><span class="line"><span class="attr">TimeoutSec</span>=<span class="number">0</span></span><br><span class="line"><span class="attr">RestartSec</span>=<span class="number">2</span></span><br><span class="line"><span class="attr">Restart</span>=always</span><br><span class="line"><span class="attr">StartLimitBurst</span>=<span class="number">3</span></span><br><span class="line"><span class="attr">StartLimitInterval</span>=<span class="number">60</span>s</span><br><span class="line"><span class="attr">LimitNOFILE</span>=infinity</span><br><span class="line"><span class="attr">LimitNPROC</span>=infinity</span><br><span class="line"><span class="attr">LimitCORE</span>=infinity</span><br><span class="line"><span class="attr">TasksMax</span>=infinity</span><br><span class="line"><span class="attr">Delegate</span>=<span class="literal">yes</span></span><br><span class="line"><span class="attr">KillMode</span>=process</span><br><span class="line"><span class="section">[Install]</span></span><br><span class="line"><span class="attr">WantedBy</span>=multi-user.target</span><br></pre></td></tr></table></figure>
+
+<p><strong>修复 Socket 文件</strong> (<code>/etc/systemd/system/cri-dockerd.socket</code>)：<br><em>注意：PartOf 必须严格匹配 Service 的文件名。</em></p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[Unit]</span></span><br><span class="line"><span class="attr">Description</span>=CRI Docker Socket for the API</span><br><span class="line"><span class="attr">PartOf</span>=cri-dockerd.service</span><br><span class="line"></span><br><span class="line"><span class="section">[Socket]</span></span><br><span class="line"><span class="attr">ListenStream</span>=/var/run/cri-dockerd.sock</span><br><span class="line"><span class="attr">SocketMode</span>=<span class="number">0660</span></span><br><span class="line"><span class="attr">SocketUser</span>=root</span><br><span class="line"><span class="attr">SocketGroup</span>=docker</span><br><span class="line"></span><br><span class="line"><span class="section">[Install]</span></span><br><span class="line"><span class="attr">WantedBy</span>=sockets.target</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-重新加载并启动"><a href="#3-重新加载并启动" class="headerlink" title="3. 重新加载并启动"></a>3. 重新加载并启动</h3><p>如果之前存在不一致的文件（如 <code>cri-docker.service</code>），需要清理掉，避免 Systemd 冲突。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 重新加载配置</span></span><br><span class="line">systemctl daemon-reload</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动顺序：先 Socket 后 Service</span></span><br><span class="line">systemctl <span class="built_in">enable</span> --now cri-dockerd.socket</span><br><span class="line">systemctl <span class="built_in">enable</span> --now cri-dockerd.service</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-验证状态"><a href="#4-验证状态" class="headerlink" title="4. 验证状态"></a>4. 验证状态</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl status cri-dockerd.socket</span><br></pre></td></tr></table></figure>
+
+<p>如果这个是 Active (running)，那么 &#x2F;var&#x2F;run&#x2F;cri-dockerd.sock 就会存在，kubelet也就能正常连接了。</p>
+<h3 id="5-最后重启Kubelet"><a href="#5-最后重启Kubelet" class="headerlink" title="5. 最后重启Kubelet"></a>5. 最后重启Kubelet</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl restart kubelet</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://windyztree.github.io/2026/01/31/cri_dockerd_boot_fix/" data-id="cuidIdx38KRNrQ6r69dQfPPIW" data-title="Kubernetes 故障排查：API Server 无法连接与 CRI-Dockerd 开机自动启动失败" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CRI-Dockerd/" rel="tag">CRI-Dockerd</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/" rel="tag">Kubernetes</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2026/01/24/k8s_deploy_tips/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">参考掘金 K8s 部署教程时的防踩坑经验分享</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Categories</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Kubernetes/">Kubernetes</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Operations-Manager/">System Center Operations Manager</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Orchestrator/">System Center Orchestrator</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/System-Center-Service-Manager/">System Center Service Manager</a></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E7%BB%BC%E5%90%88/">综合</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AD-Connector/" rel="tag">AD Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CRI-Dockerd/" rel="tag">CRI-Dockerd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Certificate/" rel="tag">Certificate</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cluster/" rel="tag">Cluster</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Communication/" rel="tag">Communication</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connection/" rel="tag">Connection</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connector/" rel="tag">Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Deployment/" rel="tag">Deployment</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Gateway/" rel="tag">Gateway</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Integration-Pack/" rel="tag">Integration Pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kubernetes/" rel="tag">Kubernetes</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Operations-Manager/" rel="tag">Operations Manager</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Postman/" rel="tag">Postman</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Relationship/" rel="tag">Relationship</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Rest-API/" rel="tag">Rest API</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCOM/" rel="tag">SCOM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCORCH/" rel="tag">SCORCH</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCSM/" rel="tag">SCSM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SPN/" rel="tag">SPN</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Discovery/" rel="tag">SQL Discovery</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Upgrade/" rel="tag">Upgrade</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Console/" rel="tag">Web Console</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Service/" rel="tag">Web Service</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/WordPress/" rel="tag">WordPress</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Workgroup/" rel="tag">Workgroup</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" rel="tag">云服务器</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%8D%9A%E5%AE%A2/" rel="tag">博客</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/AD-Connector/" style="font-size: 10px;">AD Connector</a> <a href="/tags/CRI-Dockerd/" style="font-size: 10px;">CRI-Dockerd</a> <a href="/tags/Certificate/" style="font-size: 10px;">Certificate</a> <a href="/tags/Cluster/" style="font-size: 10px;">Cluster</a> <a href="/tags/Communication/" style="font-size: 10px;">Communication</a> <a href="/tags/Connection/" style="font-size: 15px;">Connection</a> <a href="/tags/Connector/" style="font-size: 10px;">Connector</a> <a href="/tags/Deployment/" style="font-size: 10px;">Deployment</a> <a href="/tags/Gateway/" style="font-size: 10px;">Gateway</a> <a href="/tags/Integration-Pack/" style="font-size: 10px;">Integration Pack</a> <a href="/tags/Kubernetes/" style="font-size: 15px;">Kubernetes</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/Network/" style="font-size: 10px;">Network</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Operations-Manager/" style="font-size: 10px;">Operations Manager</a> <a href="/tags/PHP/" style="font-size: 10px;">PHP</a> <a href="/tags/Postman/" style="font-size: 10px;">Postman</a> <a href="/tags/PowerShell/" style="font-size: 10px;">PowerShell</a> <a href="/tags/Relationship/" style="font-size: 10px;">Relationship</a> <a href="/tags/Rest-API/" style="font-size: 10px;">Rest API</a> <a href="/tags/SCOM/" style="font-size: 20px;">SCOM</a> <a href="/tags/SCORCH/" style="font-size: 20px;">SCORCH</a> <a href="/tags/SCSM/" style="font-size: 10px;">SCSM</a> <a href="/tags/SPN/" style="font-size: 10px;">SPN</a> <a href="/tags/SQL-Discovery/" style="font-size: 10px;">SQL Discovery</a> <a href="/tags/Ubuntu/" style="font-size: 10px;">Ubuntu</a> <a href="/tags/Upgrade/" style="font-size: 10px;">Upgrade</a> <a href="/tags/Web-Console/" style="font-size: 10px;">Web Console</a> <a href="/tags/Web-Service/" style="font-size: 15px;">Web Service</a> <a href="/tags/WordPress/" style="font-size: 10px;">WordPress</a> <a href="/tags/Workgroup/" style="font-size: 10px;">Workgroup</a> <a href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" style="font-size: 10px;">云服务器</a> <a href="/tags/%E5%8D%9A%E5%AE%A2/" style="font-size: 10px;">博客</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Archives</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2026/01/">January 2026</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/05/">May 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2020/04/">April 2020</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/11/">November 2019</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2019/09/">September 2019</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Recent Posts</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2026/01/31/cri_dockerd_boot_fix/">Kubernetes 故障排查：API Server 无法连接与 CRI-Dockerd 开机自动启动失败</a>
+          </li>
+        
+          <li>
+            <a href="/2026/01/24/k8s_deploy_tips/">参考掘金 K8s 部署教程时的防踩坑经验分享</a>
+          </li>
+        
+          <li>
+            <a href="/2020/05/10/sco_scom_ip/">SCORCH - SCOM IP – &#34;Failed to connect. Please verify your connection settings.&#34;</a>
+          </li>
+        
+          <li>
+            <a href="/2020/04/29/scom_sql_discovery/">SCOM - SQL DB Engine Discovery Mechanism on Cluster</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/24/sco_web_fail/">Fail to connect to Orchestrator Web Service</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      
+      &copy; 2026 Wendi Cai<br>
+      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.6.4.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  </div>
+</body>
+</html>

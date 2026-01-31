@@ -71,6 +71,86 @@
       <div class="outer">
         <section id="main">
   
+    <article id="post-cri_dockerd_boot_fix" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
+  <div class="article-meta">
+    <a href="/2026/01/31/cri_dockerd_boot_fix/" class="article-date">
+  <time class="dt-published" datetime="2026-01-30T16:00:00.000Z" itemprop="datePublished">2026-01-31</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Kubernetes/">Kubernetes</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="p-name article-title" href="/2026/01/31/cri_dockerd_boot_fix/">Kubernetes 故障排查：API Server 无法连接与 CRI-Dockerd 开机自动启动失败</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="e-content article-entry" itemprop="articleBody">
+      
+        <h1 id="Kubernetes-故障排查：API-Server-无法连接与-CRI-Dockerd-开机自动启动失败"><a href="#Kubernetes-故障排查：API-Server-无法连接与-CRI-Dockerd-开机自动启动失败" class="headerlink" title="Kubernetes 故障排查：API Server 无法连接与 CRI-Dockerd 开机自动启动失败"></a>Kubernetes 故障排查：API Server 无法连接与 CRI-Dockerd 开机自动启动失败</h1><h2 id="1-问题现象"><a href="#1-问题现象" class="headerlink" title="1. 问题现象"></a>1. 问题现象</h2><p>在部署 Kubernetes v1.24+ 版本（如 v1.35）并使用 Docker 作为运行时环境时，重启 Master 节点后，执行 <code>kubectl get nodes</code> 出现连接被拒绝的报错：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">E0123 06:25:39.253691    5936 memcache.go:265] <span class="string">&quot;Unhandled Error&quot;</span> err=<span class="string">&quot;couldn&#x27;t get current server API group list: Get \&quot;https://master:6443/api?timeout=32s\&quot;: dial tcp 192.168.109.100:6443: connect: connection refused&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>进一步排查 <code>kubelet</code> 服务日志 (<code>journalctl -xefu kubelet</code>)，发现关键报错：</p>
+<blockquote>
+<p><code>Error while dialing: dial unix /var/run/cri-dockerd.sock: connect: no such file or directory</code></p>
+</blockquote>
+<p>检查 <code>cri-dockerd</code> 服务状态时，发现服务未启动。但其实我是配置了<code>cri-dockerd</code>服务开机自动启动的，所以这里的主要问题是为什么自动启动失败。</p>
+<p>进一步查看报错，提示 Socket 无法加载主服务：</p>
+<figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">systemd[1]: cri-docker.socket: Socket service cri-docker.service not loaded, refusing.</span><br><span class="line">systemd[1]: Failed to listen on cri-docker.socket.</span><br></pre></td></tr></table></figure>
+
+
+<h2 id="2-原因分析"><a href="#2-原因分析" class="headerlink" title="2. 原因分析"></a>2. 原因分析</h2><ol>
+<li><strong>API Server 无法连接的原因</strong>：Kubernetes v1.24+ 移除了 Dockershim，使用 Docker 必须通过 <code>cri-dockerd</code> 中间件。如果 <code>cri-dockerd</code> 未运行，Kubelet 就无法驱动 Docker，导致 API Server 容器无法启动。</li>
+<li><strong><code>cri-dockerd</code> 服务启动失败的原因</strong>：<code>cri-dockerd</code> 通常配置为 Socket Activation 模式。这意味着 <code>cri-dockerd.socket</code> 负责创建 <code>/var/run/cri-dockerd.sock</code> 文件并监听请求，收到请求后才拉起 <code>cri-dockerd.service</code>。如果 Socket 没启动，Kubelet 就找不到 sock 文件。</li>
+<li><strong>Socket未启动的原因</strong>：<ul>
+<li><strong>命名不一致</strong>：Socket 文件配置了 <code>PartOf=cri-dockerd.service</code>，但文件系统中只有 <code>cri-docker.service</code>（少了个 d），导致 Systemd 找不到依赖服务。</li>
+<li><strong>语法错误</strong>：Systemd Unit 文件中<strong>不支持行内注释</strong>（如 <code>Requires=xxx # 注释</code>），这会导致整行解析失败，依赖关系失效。</li>
+</ul>
+</li>
+</ol>
+<h2 id="3-解决方案"><a href="#3-解决方案" class="headerlink" title="3. 解决方案"></a>3. 解决方案</h2><h3 id="1-先停止并禁用可能存在的旧服务，避免冲突"><a href="#1-先停止并禁用可能存在的旧服务，避免冲突" class="headerlink" title="1. 先停止并禁用可能存在的旧服务，避免冲突"></a>1. 先停止并禁用可能存在的旧服务，避免冲突</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">systemctl stop cri-docker.socket cri-docker.service</span><br><span class="line">systemctl <span class="built_in">disable</span> cri-docker.socket cri-docker.service</span><br><span class="line"><span class="comment"># 如果文件存在，删除它们</span></span><br><span class="line"><span class="built_in">rm</span> -f /etc/systemd/system/cri-docker.socket</span><br><span class="line"><span class="built_in">rm</span> -f /etc/systemd/system/cri-docker.service</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-规范化服务名称与配置"><a href="#2-规范化服务名称与配置" class="headerlink" title="2.规范化服务名称与配置"></a>2.规范化服务名称与配置</h3><p>为了避免混淆，建议统一将 Service 和 Socket 文件命名为 <code>cri-dockerd</code>（带 d）。</p>
+<p><strong>修复 Service 文件</strong> (<code>/etc/systemd/system/cri-dockerd.service</code>)：<br><em>注意：去掉所有行内注释，确保无多余换行。</em></p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[Unit]</span></span><br><span class="line"><span class="attr">Description</span>=CRI Interface for Docker Application Container Engine</span><br><span class="line"><span class="attr">Documentation</span>=https://docs.mirantis.com</span><br><span class="line"><span class="attr">After</span>=network-<span class="literal">on</span>line.target firewalld.service docker.service</span><br><span class="line"><span class="attr">Wants</span>=network-<span class="literal">on</span>line.target</span><br><span class="line"><span class="attr">Requires</span>=cri-dockerd.socket</span><br><span class="line"> </span><br><span class="line"><span class="section">[Service]</span></span><br><span class="line"><span class="attr">Type</span>=notify</span><br><span class="line"><span class="attr">ExecStart</span>=/usr/local/bin/cri-dockerd --pod-infra-container-image=registry.cn-hangzhou.aliyuncs.com/google_containers/pause:<span class="number">3.10</span> --network-plugin=cni --cni-conf-dir=/etc/cni/net.d --cni-bin-dir=/opt/cni/bin --container-runtime-endpoint=unix:///var/run/cri-dockerd.sock --docker-endpoint=unix:///var/run/docker.sock --cri-dockerd-root-directory=/var/lib/docker</span><br><span class="line"><span class="attr">ExecReload</span>=/bin/kill -s HUP <span class="variable">$MAINPID</span></span><br><span class="line"><span class="attr">TimeoutSec</span>=<span class="number">0</span></span><br><span class="line"><span class="attr">RestartSec</span>=<span class="number">2</span></span><br><span class="line"><span class="attr">Restart</span>=always</span><br><span class="line"><span class="attr">StartLimitBurst</span>=<span class="number">3</span></span><br><span class="line"><span class="attr">StartLimitInterval</span>=<span class="number">60</span>s</span><br><span class="line"><span class="attr">LimitNOFILE</span>=infinity</span><br><span class="line"><span class="attr">LimitNPROC</span>=infinity</span><br><span class="line"><span class="attr">LimitCORE</span>=infinity</span><br><span class="line"><span class="attr">TasksMax</span>=infinity</span><br><span class="line"><span class="attr">Delegate</span>=<span class="literal">yes</span></span><br><span class="line"><span class="attr">KillMode</span>=process</span><br><span class="line"><span class="section">[Install]</span></span><br><span class="line"><span class="attr">WantedBy</span>=multi-user.target</span><br></pre></td></tr></table></figure>
+
+<p><strong>修复 Socket 文件</strong> (<code>/etc/systemd/system/cri-dockerd.socket</code>)：<br><em>注意：PartOf 必须严格匹配 Service 的文件名。</em></p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="section">[Unit]</span></span><br><span class="line"><span class="attr">Description</span>=CRI Docker Socket for the API</span><br><span class="line"><span class="attr">PartOf</span>=cri-dockerd.service</span><br><span class="line"></span><br><span class="line"><span class="section">[Socket]</span></span><br><span class="line"><span class="attr">ListenStream</span>=/var/run/cri-dockerd.sock</span><br><span class="line"><span class="attr">SocketMode</span>=<span class="number">0660</span></span><br><span class="line"><span class="attr">SocketUser</span>=root</span><br><span class="line"><span class="attr">SocketGroup</span>=docker</span><br><span class="line"></span><br><span class="line"><span class="section">[Install]</span></span><br><span class="line"><span class="attr">WantedBy</span>=sockets.target</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-重新加载并启动"><a href="#3-重新加载并启动" class="headerlink" title="3. 重新加载并启动"></a>3. 重新加载并启动</h3><p>如果之前存在不一致的文件（如 <code>cri-docker.service</code>），需要清理掉，避免 Systemd 冲突。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 重新加载配置</span></span><br><span class="line">systemctl daemon-reload</span><br><span class="line"></span><br><span class="line"><span class="comment"># 启动顺序：先 Socket 后 Service</span></span><br><span class="line">systemctl <span class="built_in">enable</span> --now cri-dockerd.socket</span><br><span class="line">systemctl <span class="built_in">enable</span> --now cri-dockerd.service</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-验证状态"><a href="#4-验证状态" class="headerlink" title="4. 验证状态"></a>4. 验证状态</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl status cri-dockerd.socket</span><br></pre></td></tr></table></figure>
+
+<p>如果这个是 Active (running)，那么 &#x2F;var&#x2F;run&#x2F;cri-dockerd.sock 就会存在，kubelet也就能正常连接了。</p>
+<h3 id="5-最后重启Kubelet"><a href="#5-最后重启Kubelet" class="headerlink" title="5. 最后重启Kubelet"></a>5. 最后重启Kubelet</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">systemctl restart kubelet</span><br></pre></td></tr></table></figure>
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://windyztree.github.io/2026/01/31/cri_dockerd_boot_fix/" data-id="cuidIdx38KRNrQ6r69dQfPPIW" data-title="Kubernetes 故障排查：API Server 无法连接与 CRI-Dockerd 开机自动启动失败" class="article-share-link"><span class="fa fa-share">Share</span></a>
+      
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/CRI-Dockerd/" rel="tag">CRI-Dockerd</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Kubernetes/" rel="tag">Kubernetes</a></li></ul>
+
+    </footer>
+  </div>
+  
+</article>
+
+
+
+  
     <article id="post-k8s_deploy_tips" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
   <div class="article-meta">
     <a href="/2026/01/24/k8s_deploy_tips/" class="article-date">
@@ -100,6 +180,7 @@
         <p>最近在学习 Kubernetes，在掘金上看到一篇部署教程：<a target="_blank" rel="noopener" href="https://juejin.cn/post/7473838374366347303">Kubernetes v1.35 部署实战</a>。</p>
 <p>这篇文章讲解得非常清晰，实操性也很强，推荐给想学习搭建 K8s 集群的同学们。</p>
 <p>不过，在跟随教程实操的过程中，我遇到了一些配置上的细节问题。为了帮助大家更顺畅地完成部署，我总结了这份经验分享，作为原教程的补充。</p>
+<p>注：如果已经遇到了cri-dockerd相关服务开机启动失败的问题，可参考 <a href="https://windyztree.github.io/2026/01/31/cri_dockerd_boot_fix/">Kubernetes 故障排查：API Server 无法连接与 CRI-Dockerd 开机自动启动失败</a> 解决。</p>
 <hr>
 <h2 id="1-Systemd-配置文件细节"><a href="#1-Systemd-配置文件细节" class="headerlink" title="1. Systemd 配置文件细节"></a>1. Systemd 配置文件细节</h2><p>原文提供了详细的 <code>cri-dockerd</code> 服务配置模板。但在直接使用时，需要注意一些细节。</p>
 <h3 id="1-1-避免行内注释"><a href="#1-1-避免行内注释" class="headerlink" title="1.1 避免行内注释"></a>1.1 避免行内注释</h3><p><strong>问题</strong>：<br><code>/etc/systemd/system/cri-dockerd.service</code> 和 <code>/etc/systemd/system/cri-docker.socket</code> 配置文件中如果包含类似 <code>Requires=cri-docker.socket # 依赖socket</code> 这样的行内注释，Systemd 可能会解析失败，报错 <code>Failed to add dependency on #...</code>。</p>
@@ -802,215 +883,12 @@
 
 
   
-    <article id="post-wordpress_blog" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2019/09/21/wordpress_blog/" class="article-date">
-  <time class="dt-published" datetime="2019-09-20T16:00:00.000Z" itemprop="datePublished">2019-09-21</time>
-</a>
+
+
+  <nav id="page-nav">
     
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/%E7%BB%BC%E5%90%88/">综合</a>
-  </div>
-
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 itemprop="name">
-      <a class="p-name article-title" href="/2019/09/21/wordpress_blog/">如何用WordPress + Nginx + MySQL + PHP搭建个人博客</a>
-    </h1>
-  
-
-      </header>
-    
-    <div class="e-content article-entry" itemprop="articleBody">
-      
-        <h2 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h2><h3 id="1-云服务器"><a href="#1-云服务器" class="headerlink" title="1. 云服务器"></a>1. 云服务器</h3><p>我选用的是阿里云服务器，操作系统是Ubuntu。因此本文搭建过程中涉及到的具体操作都以Ubuntu为例，其他操作系统可类推。</p>
-<h3 id="2-域名及云解析DNS"><a href="#2-域名及云解析DNS" class="headerlink" title="2. 域名及云解析DNS"></a>2. 域名及云解析DNS</h3><p>有了服务器后，第二步便是申请域名及购买云解析DNS，也是在阿里云上购买的。阿里云会根据我们申请的域名个数自动调整云解析DNS的域名个数和费用。</p>
-<h2 id="主要步骤"><a href="#主要步骤" class="headerlink" title="主要步骤"></a>主要步骤</h2><p>这里给出用WordPress + Nginx + MySQL + PHP搭建个人博客的主要步骤，让大家对整体流程有一个完整的概念。详细步骤及操作方法见后文。文末附有可能遇到的问题及解决方案。</p>
-<ol>
-<li>下载WordPress</li>
-<li>安装PHP</li>
-<li>安装Nginx</li>
-<li>安装MySQL</li>
-<li>创建WordPress用户名和数据库</li>
-<li>复制WordPress文件到网站根目录</li>
-<li>配置Nginx使用PHP及我们申请好的域名</li>
-<li>为WordPress设置<code>wp-config.php</code>文件</li>
-<li>安装及配置WordPress</li>
-</ol>
-<h2 id="详细步骤"><a href="#详细步骤" class="headerlink" title="详细步骤"></a>详细步骤</h2><h3 id="一、下载WordPress"><a href="#一、下载WordPress" class="headerlink" title="一、下载WordPress"></a>一、下载WordPress</h3><ol>
-<li>在WordPress官网下载安装文件到PC。</li>
-<li>下载并安装WinSCP。通过WinSCP将WordPress安装文件从PC传输到Ubuntu服务器上。</li>
-<li>解压WordPress安装文件。</li>
-</ol>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt install unzip</span><br></pre></td></tr></table></figure>
-
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">unzip wordpress-5.2.1.zip</span><br></pre></td></tr></table></figure>
-
-<h3 id="二、安装PHP"><a href="#二、安装PHP" class="headerlink" title="二、安装PHP"></a>二、安装PHP</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt install php</span><br></pre></td></tr></table></figure>
-
-<p>检查PHP的安装路径：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">whereis php-fpm</span><br></pre></td></tr></table></figure>
-
-<p>启动PHP：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">service php7.2-fpm start</span><br></pre></td></tr></table></figure>
-
-<h3 id="三、安装Nginx"><a href="#三、安装Nginx" class="headerlink" title="三、安装Nginx"></a>三、安装Nginx</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt install nginx</span><br></pre></td></tr></table></figure>
-
-<p>启动Nginx：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">service nginx start</span><br></pre></td></tr></table></figure>
-
-<p>启动完成后，在浏览器中访问服务器公网IP<code>http://xx.xx.xx.xx</code>，应该可以看到如下页面。实际上打开的是<code>/var/www/html/</code>下的<code>index.nginx-debian.html</code>页面。</p>
-<p><img src="/../images/nginx.png"></p>
-<h3 id="四、安装MySQL"><a href="#四、安装MySQL" class="headerlink" title="四、安装MySQL"></a>四、安装MySQL</h3><p>我们需要为WordPress创建一个数据库，这里选用的是MySQL数据库服务。</p>
-<p>安装MySQL:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> apt install mysql-server</span><br><span class="line"><span class="built_in">sudo</span> apt install mysql-client</span><br><span class="line"><span class="built_in">sudo</span> apt install libmysqlclient-dev</span><br></pre></td></tr></table></figure>
-
-<p>安装完后可以通过以下命令来检查安装结果，如果处于LISTEN状态，则安装成功。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> netstat -tap | grep mysql</span><br></pre></td></tr></table></figure>
-
-<p><img src="/../images/mysql.png"></p>
-<h3 id="五、创建WordPress用户名和数据库"><a href="#五、创建WordPress用户名和数据库" class="headerlink" title="五、创建WordPress用户名和数据库"></a>五、创建WordPress用户名和数据库</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 替换*adminusername*为你的数据库用户名</span></span><br><span class="line">$ mysql -u *adminusername* -p</span><br><span class="line">Enter password:</span><br><span class="line">Welcome to the MySQL monitor.  Commands end with ; or \g.</span><br><span class="line">Your MySQL connection <span class="built_in">id</span> is 5340 to server version: 3.23.54</span><br><span class="line">Type <span class="string">&#x27;help;&#x27;</span> or <span class="string">&#x27;\h&#x27;</span> <span class="keyword">for</span> <span class="built_in">help</span>. Type <span class="string">&#x27;\c&#x27;</span> to clear the buffer.</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建WordPress数据库，替换*databasename*为数据库名称，如blogdb</span></span><br><span class="line">mysql&gt; CREATE DATABASE *databasename*;</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 替换dabasename, wordpressusername, hostname和password。hostname通常是localhost</span></span><br><span class="line">mysql&gt; GRANT ALL PRIVILEGES ON databasename.* TO <span class="string">&quot;wordpressusername&quot;</span>@<span class="string">&quot;hostname&quot;</span></span><br><span class="line">    -&gt; IDENTIFIED BY <span class="string">&quot;password&quot;</span>;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line">mysql&gt; FLUSH PRIVILEGES;</span><br><span class="line">Query OK, 0 rows affected (0.01 sec)</span><br><span class="line">mysql&gt; EXIT</span><br><span class="line">Bye</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
-
-<p>下面是我替换关键内容后的范例：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">$ mysql -u root -p</span><br><span class="line">Enter password:</span><br><span class="line">Welcome to the MySQL monitor.  Commands end with ; or \g.</span><br><span class="line">Your MySQL connection <span class="built_in">id</span> is 5340 to server version: 3.23.54</span><br><span class="line">Type <span class="string">&#x27;help;&#x27;</span> or <span class="string">&#x27;\h&#x27;</span> <span class="keyword">for</span> <span class="built_in">help</span>. Type <span class="string">&#x27;\c&#x27;</span> to clear the buffer.</span><br><span class="line">mysql&gt; CREATE DATABASE blogdb;</span><br><span class="line">Query OK, 1 row affected (0.00 sec)</span><br><span class="line">mysql&gt; GRANT ALL PRIVILEGES ON blogdb.* TO <span class="string">&quot;wendi&quot;</span>@<span class="string">&quot;localhost&quot;</span></span><br><span class="line">    -&gt; IDENTIFIED BY <span class="string">&quot;mypassword&quot;</span>;</span><br><span class="line">Query OK, 0 rows affected (0.00 sec)</span><br><span class="line">mysql&gt; FLUSH PRIVILEGES;</span><br><span class="line">Query OK, 0 rows affected (0.01 sec)</span><br><span class="line">mysql&gt; EXIT</span><br><span class="line">Bye</span><br><span class="line">$</span><br></pre></td></tr></table></figure>
-
-<h3 id="六、复制WordPress文件到网站根目录"><a href="#六、复制WordPress文件到网站根目录" class="headerlink" title="六、复制WordPress文件到网站根目录"></a>六、复制WordPress文件到网站根目录</h3><p>将解压后的WordPress目录下所有内容（无需转移目录本身）转移到网站根目录下。网站根目录默认为<code>/var/www/html/</code>，为了便于管理，我建立了路径<code>/var/www/www.wendicai.net/</code>作为我的网站根目录。</p>
-<h3 id="七、配置Nginx使用PHP及我们申请好的域名"><a href="#七、配置Nginx使用PHP及我们申请好的域名" class="headerlink" title="七、配置Nginx使用PHP及我们申请好的域名"></a>七、配置Nginx使用PHP及我们申请好的域名</h3><p>修改Nginx的default配置文件，该文件位于<code>/etc/nginx/sites-available/default</code>。需要更改的地方已在下面列出。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">server &#123;</span><br><span class="line">    <span class="comment"># 【更改点1】因为我们要使用域名访问，这里删除default_server</span></span><br><span class="line">    listen 80;</span><br><span class="line">    listen [::]:80;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 【更改点2】网站根目录，默认路径为/var/www/html</span></span><br><span class="line">    <span class="comment"># 为了便于管理，我建立了路径/var/www/www.wendicai.net为我的网站根目录</span></span><br><span class="line">    <span class="comment"># 如果使用非默认路径，需要将原路径/var/www/html/下的所有文件拷贝到新路径中</span></span><br><span class="line">    root /var/www/www.wendicai.net;</span><br><span class="line"></span><br><span class="line">    <span class="comment">#【更改点3】在index.html前加上index.php，以支持WordPress</span></span><br><span class="line">    <span class="comment"># Add index.php to the list if you are using PHP</span></span><br><span class="line">    index index.php index.html index.htm index.nginx-debian.html;</span><br><span class="line"></span><br><span class="line">    <span class="comment">#【更改点4】替换“_”为我们申请好的域名</span></span><br><span class="line">    server_name www.wendicai.net;</span><br><span class="line">    location / &#123;</span><br><span class="line">        <span class="comment"># First attempt to serve request as file, then</span></span><br><span class="line">        <span class="comment"># as directory, then fall back to displaying a 404.</span></span><br><span class="line">        try_files <span class="variable">$uri</span> <span class="variable">$uri</span>/ =404;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">#【更改点5】取消此部分注释，因为WordPress需要用到PHP。如果安装的PHP版本不是7.0，需要手动改下版本号</span></span><br><span class="line">    <span class="comment"># pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000</span></span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    location ~ \.php$ &#123;</span><br><span class="line">        include snippets/fastcgi-php.conf;</span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    <span class="comment">#   # With php7.0-cgi alone:</span></span><br><span class="line">    <span class="comment">#   fastcgi_pass 127.0.0.1:9000;</span></span><br><span class="line">    <span class="comment">#   # With php7.0-fpm:</span></span><br><span class="line">        fastcgi_pass unix:/run/php/php7.0-fpm.sock;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># deny access to .htaccess files, if Apache&#x27;s document root</span></span><br><span class="line">    <span class="comment"># concurs with nginx&#x27;s one</span></span><br><span class="line">    <span class="comment">#</span></span><br><span class="line">    location ~ /\.ht &#123;</span><br><span class="line">        deny all;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p>配置修改后需要重启Nginx服务生效：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sudo</span> service nginx restart</span><br></pre></td></tr></table></figure>
-
-<h4 id="如何配置Nginx绑定多个域名"><a href="#如何配置Nginx绑定多个域名" class="headerlink" title="如何配置Nginx绑定多个域名"></a>如何配置Nginx绑定多个域名</h4><p>值得一提的是，这台Ubuntu服务器是我和小伙伴共用的，我们各自申请了不同的域名，因此需要让Nginx同时识别两个域名，且两个域名对应各自的页面内容。</p>
-<p>具体的配置方法如下：</p>
-<ol>
-<li><strong>分别给每个域名创建一个根目录</strong></li>
-</ol>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@WebServer:/var/www# <span class="built_in">ls</span></span><br><span class="line">www.wendicai.net  www.xia-weiwen.com</span><br></pre></td></tr></table></figure>
-
-<p>并将原路径<code>/var/www/html/</code>下的所有文件拷贝过去。</p>
-<ol start="2">
-<li><strong>分别给每个域名创建一个配置文件</strong></li>
-</ol>
-<p>在<code>/etc/nginx/vhost</code>路径下为每个域名创建一个配置文件，命名为<code>vhost_&lt;域名关键字&gt;.conf</code>。</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">root@Ubuntu:/etc/nginx/vhost# <span class="built_in">ls</span></span><br><span class="line">vhost_wendicai.conf  vhost_xia-weiwen.conf</span><br></pre></td></tr></table></figure>
-
-<p>将<code>/etc/nginx/sites-available/default</code>文件内容拷贝到新配置文件中，并按前文所述的配置文件修改方法，分别修改两个域名的配置信息。root网站根目录应分别为步骤1中创建的对应目录。</p>
-<ol start="3">
-<li><strong>将新配置文件路径加入到<code>nginx.config</code>中</strong></li>
-</ol>
-<p>修改<code>/etc/nginx/nginx.conf</code>文件，在http代码块中添加新的配置文件路径：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">http &#123;</span><br><span class="line">    ......</span><br><span class="line">    include /etc/nginx/conf.d/*.conf;</span><br><span class="line">    include /etc/nginx/sites-enabled/*;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 添加新配置文件所在路径/etc/nginx/vhost/*.conf</span></span><br><span class="line">    include /etc/nginx/vhost/*.conf; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<ol start="4">
-<li><strong>重启Nginx服务以生效</strong></li>
-</ol>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">service nginx restart</span><br></pre></td></tr></table></figure>
-
-<p>现在，分别访问两个域名<code>www.wendicai.net</code>和<code>www.xia-weiwen.com</code>，实际打开的页面将分别是<code>/var/www/www.wendicai.net</code>和<code>/var/www/www.xia-weiwen.com</code>下的文件。</p>
-<h3 id="八、为WordPress设置wp-config-php文件"><a href="#八、为WordPress设置wp-config-php文件" class="headerlink" title="八、为WordPress设置wp-config.php文件"></a>八、为WordPress设置wp-config.php文件</h3><p>在浏览器中访问<code>http://&lt;域名&gt;/wp-admin/install.php</code>, 出现以下页面，要求填入数据库信息。<br><img src="/../images/wordpress.png"></p>
-<p>说明：</p>
-<p><code>Database Name</code>是步骤六中创建的数据库名称，我的是blogdb。</p>
-<p><code>User Name</code>和<code>Password</code>分别是是步骤六中创建的数据库用户名和密码。</p>
-<p><code>Database Host</code>与步骤六中设定的<code>hostname</code>一致，通常是<code>localhost</code>。<br><code>Table Prefix</code>可以不改，但由于我们要在同一个数据库中管理两个域名下的数据，我在默认前缀后又加上了各自的域名。</p>
-<p>点击<code>Submit</code>，可能会遇到以下两种情况：</p>
-<p>配置文件自动修改成功。此时不要点击<code>Run the Install</code>，进入步骤八继续。</p>
-<p>如果WordPress无法查找到<code>wp-config.php</code>文件，则会根据我们填入的信息自动生成配置文件内容，并建议我们手动创建并编辑<code>wp-config.php</code>文件。</p>
-<p>如果是第二种情况，我们只需要在WordPress的解压路径中找到<code>wp-config-sample.php</code>文件，将其重命名为<code>wp-config.php</code>，并将上面自动生成的配置文件内容拷贝到<code>wp-config.php</code>中。</p>
-<h3 id="九、安装WordPress"><a href="#九、安装WordPress" class="headerlink" title="九、安装WordPress"></a>九、安装WordPress</h3><ul>
-<li>如果配置文件自动修改成功，此时点击<code>Run the install</code>安装即可。</li>
-<li>如果<code>wp-config.php</code>为手动创建，需要重新访问<code>http://&lt;域名&gt;/wp-admin/install.php</code>，进入安装。<br>填入以下个人信息和偏好设置后，点击<code>Install WordPress</code>进行安装。这一页填入的信息将来在WordPress后台<code>http://&lt;域名&gt;/wp-admin</code>都是可更改的。</li>
-</ul>
-<hr>
-<p>安装成功啦！接下来就可以登录进入后台愉快地玩耍了~</p>
-<p>WordPress怎么玩？可以参考WordPress的官方文档。</p>
-<p>WordPress官方中文文档：<a target="_blank" rel="noopener" href="http://codex.wordpress.org.cn/%E9%A6%96%E9%A1%B5" title="http:&#x2F;&#x2F;codex.wordpress.org.cn&#x2F;%E9%A6%96%E9%A1%B5">http://codex.wordpress.org.cn/%E9%A6%96%E9%A1%B5</a></p>
-<p>使用WordPress：<a target="_blank" rel="noopener" href="http://codex.wordpress.org.cn/%E4%BD%BF%E7%94%A8_WordPress" title="http:&#x2F;&#x2F;codex.wordpress.org.cn&#x2F;%E4%BD%BF%E7%94%A8_WordPress">http://codex.wordpress.org.cn/%E4%BD%BF%E7%94%A8_WordPress</a></p>
-<h2 id="可能遇到的问题"><a href="#可能遇到的问题" class="headerlink" title="可能遇到的问题"></a>可能遇到的问题</h2><p>我在搭建过程中遇到了不少问题，在这里将这些问题与其解决方法分享出来，希望可以帮助大家少走弯路。</p>
-<ul>
-<li><strong>“nginx: [emerg] bind() to 0.0.0.0:80 failed (98: Address already in use)”</strong></li>
-</ul>
-<p>Nginx安装完成后，启动Nginx失败并出现以下报错</p>
-<p><img src="/../images/nginx_error.png"></p>
-<p>这是因为80端口被其他服务占用。可以通过以下命令来检查：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">lsof -i:80</span><br></pre></td></tr></table></figure>
-
-<p>我的情况是云服务器本身预装了apache，从结果中可以看出80端口被apaceh2占用。</p>
-<p><img src="/../images/nginx_error2.png"></p>
-<p>将apache2服务停掉后，成功启动Nginx。</p>
-<p><img src="/../images/nginx_error2.png"></p>
-<ul>
-<li><strong>主题、插件等“安装失败：无法创建目录”</strong></li>
-</ul>
-<p><img src="/../images/theme_error.png"></p>
-<p>用以下命令添加权限：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">chmod</span> -R 777 /var/www/www.wendicai.net <span class="comment"># 网站根目录</span></span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>“在裁剪您的图像时发生了错误”</strong></li>
-</ul>
-<p>在WordPress中裁剪图片时，报错“在裁剪您的图像时发生了错误”。</p>
-<p>这是由于PHP的GD库未安装。运行以下命令安装：</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">apt-get install php7.2-gd</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>设置中英文摘要长度</strong></li>
-</ul>
-<p>在<strong>外观</strong>-&gt;<strong>主题编辑器</strong>中找到<code>functions.php</code>，在末尾加上以下代码。</p>
-<p>中文摘要（替换“100”为你想要的长度）：</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">iesay_filter_chinese_excerpt</span>(<span class="params"> <span class="variable">$output</span> </span>) </span>&#123;</span><br><span class="line"><span class="keyword">global</span> <span class="variable">$post</span>;</span><br><span class="line"><span class="comment">//check if its chinese character input</span></span><br><span class="line"><span class="variable">$chinese_output</span> = <span class="title function_ invoke__">preg_match_all</span>(<span class="string">&quot;/\p&#123;Han&#125;+/u&quot;</span>, <span class="variable">$post</span>-&gt;post_content, <span class="variable">$matches</span>);</span><br><span class="line"><span class="keyword">if</span>(<span class="variable">$chinese_output</span>) &#123;</span><br><span class="line"><span class="variable">$output</span> = <span class="title function_ invoke__">mb_substr</span>( <span class="variable">$output</span>, <span class="number">0</span>, <span class="number">100</span> ) . <span class="string">&#x27;...&#x27;</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="keyword">return</span> <span class="variable">$output</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="title function_ invoke__">add_filter</span>( <span class="string">&#x27;get_the_excerpt&#x27;</span>, <span class="string">&#x27;iesay_filter_chinese_excerpt&#x27;</span> );</span><br></pre></td></tr></table></figure>
-
-<p>英文摘要（替换“50”为你想要的长度）</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">ie_longer_excerpts</span>(<span class="params"> <span class="variable">$length</span> </span>) </span>&#123;</span><br><span class="line">  <span class="comment">// Don&#x27;t change anything inside /wp-admin/</span></span><br><span class="line">  <span class="keyword">if</span> ( <span class="title function_ invoke__">is_admin</span>() ) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="variable">$length</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// Set excerpt length to 50 words</span></span><br><span class="line">  <span class="keyword">return</span> <span class="number">50</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// &quot;999&quot; priority makes this run last of all the functions hooked to this filter, meaning it overrides them</span></span><br><span class="line"><span class="title function_ invoke__">add_filter</span>( <span class="string">&#x27;excerpt_length&#x27;</span>, <span class="string">&#x27;ie_longer_excerpts&#x27;</span>, <span class="number">999</span> );</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>设置文章中所有链接在新窗口中打开</strong></li>
-</ul>
-<p>在<strong>外观</strong>-&gt;<strong>主题编辑器</strong>中找到<code>functions.php</code>，在末尾加上以下代码。</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">autoblank</span>(<span class="params"><span class="variable">$text</span></span>) </span>&#123;</span><br><span class="line">	<span class="variable">$return</span> = <span class="title function_ invoke__">str_replace</span>(<span class="string">&#x27;&lt;a&#x27;</span>, <span class="string">&#x27;&lt;a target=&quot;_blank&quot;&#x27;</span>, <span class="variable">$text</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="variable">$return</span>;</span><br><span class="line">&#125;</span><br><span class="line"><span class="title function_ invoke__">add_filter</span>(<span class="string">&#x27;the_content&#x27;</span>, <span class="string">&#x27;autoblank&#x27;</span>);</span><br></pre></td></tr></table></figure>
-
-<ul>
-<li><strong>域名变更了怎么办？</strong></li>
-</ul>
-<p>有段时间工作很忙疏于维护博客，结果之前申请的域名就到期被收回了，而且紧接着还被人抢注了&#x3D; &#x3D;无奈之下只得更换域名。。</p>
-<p>这种情况直接用新域名访问肯定是不行的，需要在Nginx和Wordpress相应的配置文件中也更改为新的域名。</p>
-<p>需要修改的主要是以下几处：</p>
-<ol>
-<li>Nginx的配置文件，默认路径是<code>/etc/nginx/sites-available/default</code></li>
-</ol>
-<p>如果你像我一样自己创建了另外的网站根目录，则需要修改对应目录下的配置文件。按照前文所述的配置，我需要修改的是<code>/etc/nginx/vhost/vhost_wendicai.conf</code>。</p>
-<p>修改后需重启Nginx服务以生效：<code>service nginx restart</code>。</p>
-<ol start="2">
-<li>Wordpress上的更改可参考<a target="_blank" rel="noopener" href="https://www.liwei8090.com/21909.html" title="这篇博客">这篇博客</a></li>
-</ol>
-<p>我的情况是原域名WordPress管理区域已经无法访问，因此采取了方法2，在<code>/wp-content/themes/your-theme-folder/functions.php</code>文件底部添加以下代码：</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_ invoke__">update_option</span>( <span class="string">&#x27;siteurl&#x27;</span>, <span class="string">&#x27;http://www.wendicai.net&#x27;</span> );</span><br><span class="line"><span class="title function_ invoke__">update_option</span>( <span class="string">&#x27;home&#x27;</span>, <span class="string">&#x27;https://www.wendicai.net&#x27;</span> );</span><br></pre></td></tr></table></figure>
-
-<p>重新访问新URL，确认一切正常后就可以删除这两行代码了。</p>
-
-      
-    </div>
-    <footer class="article-footer">
-      <a data-url="http://windyztree.github.io/2019/09/21/wordpress_blog/" data-id="cuidxnpIuZGiPBiuteiNijqIf" data-title="如何用WordPress + Nginx + MySQL + PHP搭建个人博客" class="article-share-link"><span class="fa fa-share">Share</span></a>
-      
-      
-      
-  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/WordPress/" rel="tag">WordPress</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" rel="tag">云服务器</a></li><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/%E5%8D%9A%E5%AE%A2/" rel="tag">博客</a></li></ul>
-
-    </footer>
-  </div>
-  
-</article>
-
-
-
-  
-
+    <span class="page-number current">1</span><a class="page-number" href="/page/2/">2</a><a class="extend next" rel="next" href="/page/2/">Next &raquo;</a>
+  </nav>
 
 </section>
         
@@ -1030,7 +908,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tags</h3>
     <div class="widget">
-      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AD-Connector/" rel="tag">AD Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Certificate/" rel="tag">Certificate</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cluster/" rel="tag">Cluster</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Communication/" rel="tag">Communication</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connection/" rel="tag">Connection</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connector/" rel="tag">Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Deployment/" rel="tag">Deployment</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Gateway/" rel="tag">Gateway</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Integration-Pack/" rel="tag">Integration Pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kubernetes/" rel="tag">Kubernetes</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Operations-Manager/" rel="tag">Operations Manager</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Postman/" rel="tag">Postman</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Relationship/" rel="tag">Relationship</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Rest-API/" rel="tag">Rest API</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCOM/" rel="tag">SCOM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCORCH/" rel="tag">SCORCH</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCSM/" rel="tag">SCSM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SPN/" rel="tag">SPN</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Discovery/" rel="tag">SQL Discovery</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Upgrade/" rel="tag">Upgrade</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Console/" rel="tag">Web Console</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Service/" rel="tag">Web Service</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/WordPress/" rel="tag">WordPress</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Workgroup/" rel="tag">Workgroup</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" rel="tag">云服务器</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%8D%9A%E5%AE%A2/" rel="tag">博客</a></li></ul>
+      <ul class="tag-list" itemprop="keywords"><li class="tag-list-item"><a class="tag-list-link" href="/tags/AD-Connector/" rel="tag">AD Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/CRI-Dockerd/" rel="tag">CRI-Dockerd</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Certificate/" rel="tag">Certificate</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Cluster/" rel="tag">Cluster</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Communication/" rel="tag">Communication</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connection/" rel="tag">Connection</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Connector/" rel="tag">Connector</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Deployment/" rel="tag">Deployment</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Gateway/" rel="tag">Gateway</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Integration-Pack/" rel="tag">Integration Pack</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Kubernetes/" rel="tag">Kubernetes</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/MySQL/" rel="tag">MySQL</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Network/" rel="tag">Network</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Nginx/" rel="tag">Nginx</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Operations-Manager/" rel="tag">Operations Manager</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PHP/" rel="tag">PHP</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Postman/" rel="tag">Postman</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/PowerShell/" rel="tag">PowerShell</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Relationship/" rel="tag">Relationship</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Rest-API/" rel="tag">Rest API</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCOM/" rel="tag">SCOM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCORCH/" rel="tag">SCORCH</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SCSM/" rel="tag">SCSM</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SPN/" rel="tag">SPN</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/SQL-Discovery/" rel="tag">SQL Discovery</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Ubuntu/" rel="tag">Ubuntu</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Upgrade/" rel="tag">Upgrade</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Console/" rel="tag">Web Console</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Web-Service/" rel="tag">Web Service</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/WordPress/" rel="tag">WordPress</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/Workgroup/" rel="tag">Workgroup</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" rel="tag">云服务器</a></li><li class="tag-list-item"><a class="tag-list-link" href="/tags/%E5%8D%9A%E5%AE%A2/" rel="tag">博客</a></li></ul>
     </div>
   </div>
 
@@ -1040,7 +918,7 @@
   <div class="widget-wrap">
     <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
-      <a href="/tags/AD-Connector/" style="font-size: 10px;">AD Connector</a> <a href="/tags/Certificate/" style="font-size: 10px;">Certificate</a> <a href="/tags/Cluster/" style="font-size: 10px;">Cluster</a> <a href="/tags/Communication/" style="font-size: 10px;">Communication</a> <a href="/tags/Connection/" style="font-size: 15px;">Connection</a> <a href="/tags/Connector/" style="font-size: 10px;">Connector</a> <a href="/tags/Deployment/" style="font-size: 10px;">Deployment</a> <a href="/tags/Gateway/" style="font-size: 10px;">Gateway</a> <a href="/tags/Integration-Pack/" style="font-size: 10px;">Integration Pack</a> <a href="/tags/Kubernetes/" style="font-size: 10px;">Kubernetes</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/Network/" style="font-size: 10px;">Network</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Operations-Manager/" style="font-size: 10px;">Operations Manager</a> <a href="/tags/PHP/" style="font-size: 10px;">PHP</a> <a href="/tags/Postman/" style="font-size: 10px;">Postman</a> <a href="/tags/PowerShell/" style="font-size: 10px;">PowerShell</a> <a href="/tags/Relationship/" style="font-size: 10px;">Relationship</a> <a href="/tags/Rest-API/" style="font-size: 10px;">Rest API</a> <a href="/tags/SCOM/" style="font-size: 20px;">SCOM</a> <a href="/tags/SCORCH/" style="font-size: 20px;">SCORCH</a> <a href="/tags/SCSM/" style="font-size: 10px;">SCSM</a> <a href="/tags/SPN/" style="font-size: 10px;">SPN</a> <a href="/tags/SQL-Discovery/" style="font-size: 10px;">SQL Discovery</a> <a href="/tags/Ubuntu/" style="font-size: 10px;">Ubuntu</a> <a href="/tags/Upgrade/" style="font-size: 10px;">Upgrade</a> <a href="/tags/Web-Console/" style="font-size: 10px;">Web Console</a> <a href="/tags/Web-Service/" style="font-size: 15px;">Web Service</a> <a href="/tags/WordPress/" style="font-size: 10px;">WordPress</a> <a href="/tags/Workgroup/" style="font-size: 10px;">Workgroup</a> <a href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" style="font-size: 10px;">云服务器</a> <a href="/tags/%E5%8D%9A%E5%AE%A2/" style="font-size: 10px;">博客</a>
+      <a href="/tags/AD-Connector/" style="font-size: 10px;">AD Connector</a> <a href="/tags/CRI-Dockerd/" style="font-size: 10px;">CRI-Dockerd</a> <a href="/tags/Certificate/" style="font-size: 10px;">Certificate</a> <a href="/tags/Cluster/" style="font-size: 10px;">Cluster</a> <a href="/tags/Communication/" style="font-size: 10px;">Communication</a> <a href="/tags/Connection/" style="font-size: 15px;">Connection</a> <a href="/tags/Connector/" style="font-size: 10px;">Connector</a> <a href="/tags/Deployment/" style="font-size: 10px;">Deployment</a> <a href="/tags/Gateway/" style="font-size: 10px;">Gateway</a> <a href="/tags/Integration-Pack/" style="font-size: 10px;">Integration Pack</a> <a href="/tags/Kubernetes/" style="font-size: 15px;">Kubernetes</a> <a href="/tags/MySQL/" style="font-size: 10px;">MySQL</a> <a href="/tags/Network/" style="font-size: 10px;">Network</a> <a href="/tags/Nginx/" style="font-size: 10px;">Nginx</a> <a href="/tags/Operations-Manager/" style="font-size: 10px;">Operations Manager</a> <a href="/tags/PHP/" style="font-size: 10px;">PHP</a> <a href="/tags/Postman/" style="font-size: 10px;">Postman</a> <a href="/tags/PowerShell/" style="font-size: 10px;">PowerShell</a> <a href="/tags/Relationship/" style="font-size: 10px;">Relationship</a> <a href="/tags/Rest-API/" style="font-size: 10px;">Rest API</a> <a href="/tags/SCOM/" style="font-size: 20px;">SCOM</a> <a href="/tags/SCORCH/" style="font-size: 20px;">SCORCH</a> <a href="/tags/SCSM/" style="font-size: 10px;">SCSM</a> <a href="/tags/SPN/" style="font-size: 10px;">SPN</a> <a href="/tags/SQL-Discovery/" style="font-size: 10px;">SQL Discovery</a> <a href="/tags/Ubuntu/" style="font-size: 10px;">Ubuntu</a> <a href="/tags/Upgrade/" style="font-size: 10px;">Upgrade</a> <a href="/tags/Web-Console/" style="font-size: 10px;">Web Console</a> <a href="/tags/Web-Service/" style="font-size: 15px;">Web Service</a> <a href="/tags/WordPress/" style="font-size: 10px;">WordPress</a> <a href="/tags/Workgroup/" style="font-size: 10px;">Workgroup</a> <a href="/tags/%E4%BA%91%E6%9C%8D%E5%8A%A1%E5%99%A8/" style="font-size: 10px;">云服务器</a> <a href="/tags/%E5%8D%9A%E5%AE%A2/" style="font-size: 10px;">博客</a>
     </div>
   </div>
 
@@ -1062,6 +940,10 @@
       <ul>
         
           <li>
+            <a href="/2026/01/31/cri_dockerd_boot_fix/">Kubernetes 故障排查：API Server 无法连接与 CRI-Dockerd 开机自动启动失败</a>
+          </li>
+        
+          <li>
             <a href="/2026/01/24/k8s_deploy_tips/">参考掘金 K8s 部署教程时的防踩坑经验分享</a>
           </li>
         
@@ -1075,10 +957,6 @@
         
           <li>
             <a href="/2019/11/24/sco_web_fail/">Fail to connect to Orchestrator Web Service</a>
-          </li>
-        
-          <li>
-            <a href="/2019/11/16/scom_web_console/">SCOM Web Console – &#34;Web Console Configuration Required&#34;</a>
           </li>
         
       </ul>
